@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { IMB_ATTRIBUTION } from "../src/core/attribution.js";
+import { imbAttribution } from "../src/core/attribution.js";
 import { createPeopleGroupsService } from "../src/core/service.js";
 import {
   handleGetPeopleGroup,
@@ -7,7 +7,7 @@ import {
   SERVER_INSTRUCTIONS,
 } from "../src/mcp/tools.js";
 import { createServer } from "../src/server.js";
-import { jsonResponse, loadFixture } from "./helpers.js";
+import { SENTINELS, jsonResponse, loadFixture, poison } from "./helpers.js";
 
 const recorded = loadFixture<{ record: Record<string, unknown> }>("recorded-pg012345.json").record;
 
@@ -21,20 +21,22 @@ function textOf(result: { content: ReadonlyArray<{ type: string }> }): string {
 
 describe("MCP tool handlers", () => {
   it("returns IMB attribution and the public record, with no engagement payload", async () => {
+    const when = new Date("2026-11-22T12:00:00Z");
     const service = createPeopleGroupsService({
-      fetch: async () => jsonResponse(recorded),
+      fetch: async () => jsonResponse(poison({ ...recorded, LocationDescription: "SENTINEL_LOCATION_TEXT" })),
       baseUrl: "http://peoplegroups.test/v1",
       pageDelayMs: 0,
       cacheTtlMs: 0,
+      now: () => when.getTime(),
     });
     const result = await handleGetPeopleGroup(service, { pgid: "PG012345" });
     expect(result.isError).toBeUndefined();
     const text = textOf(result);
-    expect(text.startsWith(IMB_ATTRIBUTION)).toBe(true);
+    expect(text.startsWith(imbAttribution(when))).toBe(true);
     expect(text).toContain("Nateni");
-    expect(text).not.toContain("SENTINEL_FIELD_WORKERS");
-    expect(text).not.toContain("SENTINEL_ENGAGEMENT_STATUS");
-    expect(text).not.toContain("LocationDescription");
+    expect(text).toContain('"unreached": true');
+    for (const sentinel of SENTINELS) expect(text).not.toContain(sentinel);
+    expect(text).not.toMatch(/GSEC|EngStat|SPIdesc|CongExst|Plnting|GSEClng|LocationDesc|PicURL|PhotoURL/);
   });
 
   it("turns a known data error into a tool error and hides unexpected error text", async () => {
@@ -60,6 +62,7 @@ describe("MCP tool handlers", () => {
       async listPeopleGroupsByLanguage() {
         throw new Error("unused");
       },
+      clearCache() {},
     };
     const hidden = await handleListUnreachedByCountry(leaking, { country: "India" });
     expect(hidden.isError).toBe(true);

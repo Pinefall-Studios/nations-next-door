@@ -1,4 +1,4 @@
-import { IMB_ATTRIBUTION, IMB_SOURCE, US_STATE_GEOGRAPHY_NOTE } from "./attribution.js";
+import { imbAttribution, imbSource, US_STATE_GEOGRAPHY_NOTE } from "./attribution.js";
 import { MemoryCache } from "./cache.js";
 import {
   InvalidQueryError,
@@ -37,6 +37,8 @@ export interface PeopleGroupsService {
     limit?: number;
     offset?: number;
   }): Promise<PeopleGroupList>;
+  /** Drop every cached response. Nothing is written to disk. */
+  clearCache(): void;
 }
 
 export interface PeopleGroupsOptions {
@@ -126,7 +128,12 @@ function assertPublicRequest(url: URL): void {
   }
   for (const key of url.searchParams.keys()) {
     const folded = key.toLowerCase();
-    if (folded === "engagement" || folded.includes("worker") || folded.includes("missionary")) {
+    if (
+      folded === "engagement" ||
+      folded === "gsec" ||
+      folded.includes("worker") ||
+      folded.includes("missionary")
+    ) {
       throw new PeopleGroupsError("Refusing to request engagement or worker data.");
     }
   }
@@ -222,10 +229,11 @@ export function createPeopleGroupsService(options: PeopleGroupsOptions = {}): Pe
     offset: number | undefined,
     geographyNote?: string,
   ): PeopleGroupList {
+    const when = new Date(fetchedAt);
     return {
       ...pageGroups(groups, limit, offset),
-      attribution: IMB_ATTRIBUTION,
-      sources: [IMB_SOURCE],
+      attribution: imbAttribution(when),
+      sources: [imbSource(when)],
       retrievedAt: fetchedAt,
       ...(geographyNote ? { geographyNote } : {}),
     };
@@ -235,7 +243,7 @@ export function createPeopleGroupsService(options: PeopleGroupsOptions = {}): Pe
     async listUnreachedByCountry(input) {
       const country = resolveCountry(input.country);
       const loaded = await fetchPages({ country });
-      const unreached = loaded.groups.filter((group) => group.reachedStatus === "unreached");
+      const unreached = loaded.groups.filter((group) => group.unreached === true);
       return listResult(unreached, loaded.fetchedAt, input.limit, input.offset);
     },
 
@@ -243,7 +251,7 @@ export function createPeopleGroupsService(options: PeopleGroupsOptions = {}): Pe
       const state = resolveUsState(input.state);
       const loaded = await fetchPages({ country: "USA" });
       const unreached = loaded.groups.filter(
-        (group) => group.reachedStatus === "unreached" && group.usStates.includes(state.code),
+        (group) => group.unreached === true && group.usStates.includes(state.code),
       );
       return listResult(unreached, loaded.fetchedAt, input.limit, input.offset, US_STATE_GEOGRAPHY_NOTE);
     },
@@ -270,11 +278,13 @@ export function createPeopleGroupsService(options: PeopleGroupsOptions = {}): Pe
       }
       const group = toPublicPeopleGroup(payload);
       if (!group) throw new PeopleGroupNotFoundError(`No people group found for ${pgid}.`);
+      const retrievedAt = new Date(now()).toISOString();
+      const when = new Date(retrievedAt);
       return {
         group,
-        attribution: IMB_ATTRIBUTION,
-        sources: [IMB_SOURCE],
-        retrievedAt: new Date(now()).toISOString(),
+        attribution: imbAttribution(when),
+        sources: [imbSource(when)],
+        retrievedAt,
       };
     },
 
@@ -286,9 +296,13 @@ export function createPeopleGroupsService(options: PeopleGroupsOptions = {}): Pe
       }
       const loaded = await fetchPages(query);
       const groups = input.unreachedOnly
-        ? loaded.groups.filter((group) => group.reachedStatus === "unreached")
+        ? loaded.groups.filter((group) => group.unreached === true)
         : loaded.groups;
       return listResult(groups, loaded.fetchedAt, input.limit, input.offset);
+    },
+
+    clearCache() {
+      cache.clear();
     },
   };
 }

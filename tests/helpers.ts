@@ -36,10 +36,12 @@ export function poison<T extends Record<string, unknown>>(record: T): T & Record
     PhotoURL: "https://example.invalid/SENTINEL_PHOTO",
     PhotoCredit: "SENTINEL_PHOTO_CREDIT",
     PicURL: "https://example.invalid/SENTINEL_PHOTO",
+    GSEC: 424242,
     GSECDescription: "SENTINEL_GSEC_TEXT church planting",
     GSECLongDescription: "SENTINEL_GSEC_LONG church planting",
     GSECbrf: "SENTINEL_GSEC_TEXT",
     GSEClng: "SENTINEL_GSEC_LONG",
+    SecurityLevel: "SENTINEL_SECURITY_LEVEL",
   };
 }
 
@@ -56,4 +58,6 @@ export const SENTINELS = [
   "SENTINEL_GSEC_TEXT",
   "SENTINEL_GSEC_LONG",
   "SENTINEL_LOCATION_TEXT",
+  "SENTINEL_SECURITY_LEVEL",
+  "424242",
 ];

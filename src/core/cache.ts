@@ -26,4 +26,8 @@ export class MemoryCache<T> {
     if (this.ttlMs <= 0) return;
     this.entries.set(key, { value, expires: this.now() + this.ttlMs });
   }
+
+  clear(): void {
+    this.entries.clear();
+  }
 }

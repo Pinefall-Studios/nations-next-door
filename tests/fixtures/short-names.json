@@ -16,18 +16,8 @@
   "Rlgn": "Islam",
   "ROR": "ISN",
   "EvngLvl": "2% or Greater but Less than 5%",
-  "GSEC": 4,
-  "LPIname": "Minimally Reached",
   "PeopleDesc": "a public description with no worker details",
   "Bible": "Available",
   "Jesus": "Not Available",
-  "ResTot": 1,
-  "EngStat": "SENTINEL_ENGAGEMENT_STATUS",
-  "SPI": 2,
-  "SPIdesc": "SENTINEL_ENGAGEMENT_PROGRESS",
-  "CongExst": "SENTINEL_CONGREGATIONS",
-  "Plnting": "SENTINEL_CHURCH_PLANTING",
-  "LocationDesc": "SENTINEL_LOCATION_TEXT",
-  "PicURL": "https://example.invalid/SENTINEL_PHOTO",
-  "FieldWorkers": "SENTINEL_FIELD_WORKERS"
+  "ResTot": 1
 }

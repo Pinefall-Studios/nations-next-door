@@ -70,7 +70,7 @@ export function createServer(service: PeopleGroupsService = createPeopleGroupsSe
     {
       title: "One people group's public details",
       description:
-        "Get one people group by PGID (for example PG012345) from IMB Global Research. Returns name, population, language and ISO 639-3 code, religion, reached or unreached status, and GSEC, plus a few other public aggregate fields. Engagement, workers, believers, and the location narrative are not returned. Includes IMB attribution.",
+        "Get one people group by PGID (for example PG012345) from IMB Global Research. Returns name, population, language and ISO 639-3 code, religion, an unreached yes or no, and the evangelical band, plus other public aggregate fields. It does not return GSEC, engagement, workers, believers, photos, or the location narrative. Includes IMB attribution.",
       inputSchema: z.object({
         pgid: z.string().describe("People group id, such as PG012345."),
       }),

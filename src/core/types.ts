@@ -1,7 +1,5 @@
 import type { SourceCitation } from "./attribution.js";
 
-export type ReachedStatus = "unreached" | "reached" | "unknown";
-
 export type PopulationContext = "indigenous" | "diaspora";
 
 export interface ScriptureAvailability {
@@ -30,6 +28,8 @@ export interface PublicPeopleGroup {
   population: number | null;
   latitude: number | null;
   longitude: number | null;
+  /** True when latitude and longitude were rounded to 1 decimal degree. */
+  coordinatesRounded: boolean;
   /** Postal codes. Empty when the group is not in the United States. */
   usStates: string[];
   primaryLanguage: {
@@ -42,11 +42,13 @@ export interface PublicPeopleGroup {
     name: string | null;
     code: string | null;
   };
-  evangelicalLevel: string | null;
-  reachedStatus: ReachedStatus;
-  /** Global Status of Evangelical Christianity, 0 through 6. The narrative, which mixes in church-planting activity, is not included. */
-  gsec: number | null;
-  lostness: string | null;
+  /**
+   * True when the evangelical band is under 2%. False when the band is 2% or more.
+   * Null when no evangelical band was published. Never inferred from GSEC.
+   */
+  unreached: boolean | null;
+  /** Evangelical percentage band, such as "Less than 2%". Null when it was not published. */
+  evangelicalBand: string | null;
   populationContext: PopulationContext | null;
   summary: string | null;
   scriptureAvailability: ScriptureAvailability;

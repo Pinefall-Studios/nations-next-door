@@ -1,6 +1,7 @@
+import { isRestrictedAccessCountry, roundTo1Decimal } from "./restricted.js";
 import { stateForPoint } from "./state-geometry.js";
 import { statesNamedIn } from "./states.js";
-import type { PopulationContext, PublicPeopleGroup, ReachedStatus, ScriptureAvailability } from "./types.js";
+import type { PopulationContext, PublicPeopleGroup, ScriptureAvailability } from "./types.js";
 
 const UNSAFE_PROSE =
   /field worker|missionar|local believer|\bbelievers?\b|church planting|congregation|engagement status/i;
@@ -53,14 +54,6 @@ function countryCode(value: unknown): string | null {
   return /^[A-Z]{3}$/.test(code) ? code : null;
 }
 
-function gsecValue(value: unknown): number | null {
-  const parsed = finiteNumber(value);
-  if (parsed === null) return null;
-  const rounded = Math.round(parsed);
-  if (rounded < 0 || rounded > 6) return null;
-  return rounded;
-}
-
 function populationContext(value: unknown): PopulationContext | null {
   if (typeof value !== "string") return null;
   const folded = value.trim().toLowerCase();
@@ -82,20 +75,31 @@ function isoDate(value: unknown): string | null {
   return date.toISOString().slice(0, 10);
 }
 
+const ENGAGEMENT_PROSE = /plant|engag|worker|missionar|believer|congregat|gsec/i;
+
 /**
  * IMB defines an unreached people group as less than 2% evangelical.
- * GSEC levels 0–3 are that same band when the evangelical text is missing.
- * The evangelical text wins when both are present.
+ * The band is the only input. GSEC is not read.
  */
-export function reachedStatus(evangelicalLevel: string | null, gsec: number | null): ReachedStatus {
-  if (evangelicalLevel) {
-    const value = evangelicalLevel.toLowerCase();
-    if (value.includes("less than 2")) return "unreached";
-    if (value.includes("%")) return "reached";
+export function unreachedFromBand(band: string | null): boolean | null {
+  if (!band) return null;
+  const value = band.toLowerCase();
+  if (value.includes("less than 2") || value.includes("< 2") || value.includes("<2")) return true;
+  const numeric = value.match(/(\d+(?:\.\d+)?)\s*%/);
+  const first = numeric?.[1];
+  if (first !== undefined) {
+    const percent = Number(first);
+    if (Number.isFinite(percent)) return percent < 2;
   }
-  if (gsec !== null && gsec >= 0 && gsec <= 3) return "unreached";
-  if (gsec !== null && gsec >= 4 && gsec <= 6) return "reached";
-  return "unknown";
+  return null;
+}
+
+function evangelicalBand(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed || UNSAFE_PROSE.test(trimmed) || ENGAGEMENT_PROSE.test(trimmed)) return null;
+  if (!trimmed.includes("%") && !/less than 2/i.test(trimmed)) return null;
+  return trimmed.length <= 160 ? trimmed : null;
 }
 
 function usStatesFor(raw: Record<string, unknown>, code: string | null): string[] {
@@ -107,11 +111,29 @@ function usStatesFor(raw: Record<string, unknown>, code: string | null): string[
     const hit = stateForPoint(latitude, longitude);
     if (hit) states.add(hit);
   }
+  // The location prose is used only to read US state names, then discarded.
   const location = pick(raw, ["LocationDescription", "LocationDesc"]);
   if (typeof location === "string") {
     for (const state of statesNamedIn(location)) states.add(state);
   }
   return [...states].sort();
+}
+
+function publishCoordinates(
+  raw: Record<string, unknown>,
+  code: string | null,
+): { latitude: number | null; longitude: number | null; coordinatesRounded: boolean } {
+  const latitude = finiteNumber(pick(raw, ["Lat", "Latitude"]));
+  const longitude = finiteNumber(pick(raw, ["Long", "Longitude", "Lng"]));
+  const restricted = isRestrictedAccessCountry(code);
+  if (!restricted) {
+    return { latitude, longitude, coordinatesRounded: false };
+  }
+  return {
+    latitude: latitude === null ? null : roundTo1Decimal(latitude),
+    longitude: longitude === null ? null : roundTo1Decimal(longitude),
+    coordinatesRounded: latitude !== null || longitude !== null,
+  };
 }
 
 function scripture(raw: Record<string, unknown>): ScriptureAvailability {
@@ -135,9 +157,11 @@ export function toPublicPeopleGroup(raw: unknown): PublicPeopleGroup | null {
   }
   const pgid = pgidValue.trim().toUpperCase();
   const code = countryCode(pick(raw, ["ISOAlpha3", "ISOalpha3", "CountryCode"]));
-  const evangelicalRaw = pick(raw, ["EvangelicalLevel", "EvngLvl"]);
-  const evangelicalText = typeof evangelicalRaw === "string" ? evangelicalRaw : null;
-  const gsec = gsecValue(pick(raw, ["GSEC"]));
+  const band = evangelicalBand(pick(raw, ["EvangelicalLevel", "EvngLvl"]));
+  const percent = band ? null : finiteNumber(pick(raw, ["EvngPct", "EvangelicalPercent"]));
+  const evangelicalBandText =
+    band ?? (percent === null ? null : `${percent}% evangelical`);
+  const coordinates = publishCoordinates(raw, code);
   const name =
     shortText(pick(raw, ["DisplayName", "NmDisp", "Name"]), 200) ?? pgid;
 
@@ -151,8 +175,9 @@ export function toPublicPeopleGroup(raw: unknown): PublicPeopleGroup | null {
     region: shortText(pick(raw, ["UNm49RegionName", "Regn"]), 80),
     subregion: shortText(pick(raw, ["UNm49SubRegionName", "RegnSub"]), 80),
     population: wholeNumber(pick(raw, ["Population", "Pop"])),
-    latitude: finiteNumber(pick(raw, ["Lat", "Latitude"])),
-    longitude: finiteNumber(pick(raw, ["Long", "Longitude", "Lng"])),
+    latitude: coordinates.latitude,
+    longitude: coordinates.longitude,
+    coordinatesRounded: coordinates.coordinatesRounded,
     usStates: usStatesFor(raw, code),
     primaryLanguage: {
       name: shortText(pick(raw, ["LanguageName", "Lang"]), 120),
@@ -163,10 +188,8 @@ export function toPublicPeopleGroup(raw: unknown): PublicPeopleGroup | null {
       name: shortText(pick(raw, ["ReligionName", "Rlgn", "ReligionDisplayName"]), 160),
       code: shortText(pick(raw, ["ReligionCode", "ROR"]), 16),
     },
-    evangelicalLevel: shortText(evangelicalText, 160),
-    reachedStatus: reachedStatus(evangelicalText, gsec),
-    gsec,
-    lostness: shortText(pick(raw, ["LostnessPriorityName", "LPIname"]), 120),
+    unreached: unreachedFromBand(evangelicalBandText),
+    evangelicalBand: evangelicalBandText,
     populationContext: populationContext(pick(raw, ["Indigenous"])),
     summary: shortText(pick(raw, ["Description", "PeopleDesc"]), 800),
     scriptureAvailability: scripture(raw),

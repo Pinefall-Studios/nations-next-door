@@ -14,17 +14,19 @@ The query functions live in `src/core`. `src/server.ts` only registers tools tha
 
 ## Data policy
 
-- Public, aggregate data only. Tools return name, population, primary language and its ISO 639-3 code, religion, reached or unreached status, GSEC, and a short list of other public fields (country, coordinates, US state assignment, a public summary, and IMB's coarse Scripture-availability notes).
-- Unreached means less than 2% evangelical. That is IMB's definition. When the evangelical band is missing, GSEC 0–3 is used, which is IMB's published unreached band.
-- The client copies an allowlist (`src/core/project.ts`). Engagement status, church-planting fields, congregation fields, photos, pejorative names, location narratives, and any worker, missionary, or believer fields are not copied. A test feeds those fields in and fails if they come back out.
+- Public, aggregate data only. Tools return name, population, primary language and its ISO 639-3 code, religion, an unreached yes or no, the evangelical percentage band, and a short list of other public fields (country, coordinates, US state assignment, a public summary, and IMB's coarse Scripture-availability notes).
+- Unreached means less than 2% evangelical. That is read only from the evangelical band. GSEC is not requested, stored, or returned, because the scale mixes in church-planting activity.
+- The client copies an allowlist (`src/core/project.ts`). GSEC, engagement status, church-planting fields, congregation fields, photos, pejorative names, location narratives, and any worker, missionary, or believer fields are not copied. A test feeds those fields in and fails if they come back out. Committed fixtures do not contain them.
+- Coordinates in Open Doors World Watch List 2026 countries are rounded to one decimal degree before they are returned. The United States is not on that list.
 - The server does not call the PeopleGroups.org export route, the stats route, or the countries route. Those last two include engagement totals. It does not send an `engagement` query parameter.
 - Results are cached in memory for 10 minutes by default, matching the `Cache-Control` max-age observed on the public API. The cache is not written to disk and is not a mirror of the dataset.
-- Every tool response includes this credit: "This information was provided by The International Mission Board - Global Research, PeopleGroups.org, https://peoplegroups.org/."
+- Every tool response includes this credit, with the month and year of the fetch: "This information was provided by The International Mission Board - Global Research, [Month Year], Nations Next Door, www.peoplegroups.org".
+- People-group data is read only from PeopleGroups.org. The IMB website terms at https://www.imb.org/website-terms-use/ forbid automated access to that website, so this project does not call it.
 - No API keys belong in the repo. `.env.example` has placeholders only.
 
 US state is not a field on the API. For groups in the United States, the library assigns a state in two ways. It tests the published latitude and longitude against US Census Bureau state boundaries (public domain, simplified by the [us-atlas](https://github.com/topojson/us-atlas) project; see `data/SOURCE.txt`). It also includes a state when the published location description names that state, so a community that the point places in Louisiana and the description also places in Texas can match both. The description text itself is not returned. This covers the 50 states and the District of Columbia. It does not cover US territories. It is a geographic approximation, not a roster of residents or churches.
 
-The PeopleGroups.org docs page still shows short field names (`NmDisp`, `Ctry`, `EngStat`). The live API, checked on 22 November 2026, returns longer names (`DisplayName`, `CountryName`, `EngagementStatus`). The client accepts both.
+The PeopleGroups.org docs page still shows short field names (`NmDisp`, `Ctry`). The live API, checked on 22 November 2026, returns longer names (`DisplayName`, `CountryName`). The client accepts both public names and drops the rest.
 
 Our MIT license covers this code. It does not relicense IMB, Joshua Project, Bible Brain, Global Recordings Network, or unfoldingWord content. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
 

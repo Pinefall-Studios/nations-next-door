@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { reachedStatus, toPublicPeopleGroup } from "../src/core/project.js";
-import { SENTINELS, loadFixture } from "./helpers.js";
+import { toPublicPeopleGroup } from "../src/core/project.js";
+import { SENTINELS, loadFixture, poison } from "./helpers.js";
 
 const recorded = loadFixture<{ record: Record<string, unknown> }>("recorded-pg012345.json").record;
 const shortNames = loadFixture<Record<string, unknown>>("short-names.json");
@@ -23,13 +23,12 @@ describe("toPublicPeopleGroup", () => {
       population: 135000,
       latitude: 10.52,
       longitude: 1.22,
+      coordinatesRounded: false,
       usStates: [],
       primaryLanguage: { name: "Nateni", code: "ntm", family: "Atlantic-Congo" },
       religion: { name: "Ethnoreligion - Animism", code: "EAN" },
-      evangelicalLevel: "Less than 2%",
-      reachedStatus: "unreached",
-      gsec: 1,
-      lostness: "Pioneer Unreached People Group",
+      unreached: true,
+      evangelicalBand: "Less than 2%",
       populationContext: "indigenous",
       summary: expect.stringContaining("northwestern Benin"),
       scriptureAvailability: { bible: "Available", jesusFilm: "Not Available", resourceTotal: 3 },
@@ -38,7 +37,9 @@ describe("toPublicPeopleGroup", () => {
   });
 
   it("strips engagement, worker, believer, photo, and location fields", () => {
-    const group = toPublicPeopleGroup(recorded);
+    const group = toPublicPeopleGroup(
+      poison({ ...recorded, LocationDescription: "SENTINEL_LOCATION_TEXT" }),
+    );
     const text = serialized(group);
     for (const sentinel of SENTINELS) {
       expect(text).not.toContain(sentinel);
@@ -55,7 +56,9 @@ describe("toPublicPeopleGroup", () => {
   });
 
   it("reads the documented short field names and still strips engagement", () => {
-    const group = toPublicPeopleGroup(shortNames);
+    const group = toPublicPeopleGroup(
+      poison({ ...shortNames, LocationDesc: "SENTINEL_LOCATION_TEXT" }),
+    );
     expect(group).toMatchObject({
       pgid: "PG000111",
       name: "Short Name Group",
@@ -65,8 +68,8 @@ describe("toPublicPeopleGroup", () => {
       population: 1000,
       primaryLanguage: { name: "Example", code: "aaa", family: "Example Family" },
       religion: { name: "Islam", code: "ISN" },
-      reachedStatus: "reached",
-      gsec: 4,
+      unreached: false,
+      evangelicalBand: "2% or Greater but Less than 5%",
       scriptureAvailability: { bible: "Available", resourceTotal: 1 },
     });
     const text = serialized(group);
@@ -88,13 +91,52 @@ describe("toPublicPeopleGroup", () => {
   });
 });
 
-describe("reachedStatus", () => {
-  it("uses the evangelical band, then GSEC 0-3", () => {
-    expect(reachedStatus("Less than 2%", 5)).toBe("unreached");
-    expect(reachedStatus("5% or Greater but Less than 10%", 1)).toBe("reached");
-    expect(reachedStatus(null, 0)).toBe("unreached");
-    expect(reachedStatus(null, 3)).toBe("unreached");
-    expect(reachedStatus(null, 4)).toBe("reached");
-    expect(reachedStatus(null, null)).toBe("unknown");
+describe("status and coordinates", () => {
+  it("does not infer unreached from GSEC when the evangelical band is missing", () => {
+    const group = toPublicPeopleGroup({
+      PGID: "PG000222",
+      DisplayName: "No band",
+      ISOAlpha3: "BEN",
+      CountryName: "Benin",
+      GSEC: 424242,
+      EngStat: "SENTINEL_ENGAGEMENT_STATUS",
+    });
+    expect(group?.unreached).toBeNull();
+    expect(group?.evangelicalBand).toBeNull();
+    expect(serialized(group)).not.toContain("424242");
+    expect(serialized(group)).not.toContain("SENTINEL_ENGAGEMENT_STATUS");
+  });
+
+  it("rounds coordinates to 1 decimal in a World Watch List country and drops photos", () => {
+    const group = toPublicPeopleGroup({
+      PGID: "PG000333",
+      DisplayName: "Kabul Test",
+      ISOAlpha3: "AFG",
+      CountryName: "Afghanistan",
+      Population: 1000,
+      EvangelicalLevel: "Less than 2%",
+      Lat: 34.555,
+      Long: 69.207,
+      GSEC: 424242,
+      PicURL: "https://example.invalid/SENTINEL_PHOTO",
+      LocationDescription: "SENTINEL_LOCATION_TEXT precise village",
+      EngStat: "SENTINEL_ENGAGEMENT_STATUS",
+      SPI: 1,
+      SPIdesc: "SENTINEL_ENGAGEMENT_PROGRESS",
+      CongExst: "SENTINEL_CONGREGATIONS",
+      Plnting: "SENTINEL_CHURCH_PLANTING",
+      GSEClng: "SENTINEL_GSEC_LONG",
+    });
+    expect(group).toMatchObject({
+      unreached: true,
+      evangelicalBand: "Less than 2%",
+      latitude: 34.6,
+      longitude: 69.2,
+      coordinatesRounded: true,
+      usStates: [],
+    });
+    const text = serialized(group);
+    for (const sentinel of SENTINELS) expect(text).not.toContain(sentinel);
+    expect(text).not.toMatch(/GSEC|PicURL|EngStat|LocationDesc/i);
   });
 });

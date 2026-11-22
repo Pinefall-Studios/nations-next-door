@@ -6,7 +6,6 @@
     "CountryName": "United States",
     "Population": 500000,
     "EvangelicalLevel": "Less than 2%",
-    "GSEC": 1,
     "LanguageName": "Example",
     "LanguageCode": "aaa",
     "ReligionName": "Islam",
@@ -22,13 +21,11 @@
     "CountryName": "United States",
     "Population": 80000,
     "EvangelicalLevel": "Less than 2%",
-    "GSEC": 1,
     "LanguageName": "French",
     "LanguageCode": "fra",
     "ReligionName": "Christianity - Roman Catholicism",
     "Lat": 29.9511,
     "Long": -90.0715,
-    "LocationDescription": "Louisiana: coast; Texas: small border area SENTINEL_LOCATION_TEXT",
     "Indigenous": "Indigenous",
     "CaptureDate": "2026-11-21"
   },
@@ -39,7 +36,6 @@
     "CountryName": "United States",
     "Population": 5000,
     "EvangelicalLevel": "Less than 2%",
-    "GSEC": 2,
     "LanguageName": "Spanish",
     "LanguageCode": "spa",
     "ReligionName": "Christianity",
@@ -55,13 +51,11 @@
     "CountryName": "United States",
     "Population": 1200,
     "EvangelicalLevel": "Less than 2%",
-    "GSEC": 1,
     "LanguageName": "Test Language",
     "LanguageCode": "aaa",
     "ReligionName": "Islam",
     "Lat": null,
     "Long": null,
-    "LocationDescription": "Texas: SENTINEL_LOCATION_TEXT near Lufkin",
     "CaptureDate": "2026-11-21"
   },
   {
@@ -71,7 +65,6 @@
     "CountryName": "United States",
     "Population": 900000,
     "EvangelicalLevel": "5% or Greater but Less than 10%",
-    "GSEC": 5,
     "LanguageName": "English",
     "LanguageCode": "eng",
     "ReligionName": "Christianity",
@@ -86,13 +79,11 @@
     "CountryName": "United States",
     "Population": 4000,
     "EvangelicalLevel": "Less than 2%",
-    "GSEC": 1,
     "LanguageName": "English",
     "LanguageCode": "eng",
     "ReligionName": "Christianity",
     "Lat": 38.3498,
     "Long": -81.6326,
-    "LocationDescription": "West Virginia: Charleston",
     "CaptureDate": "2026-11-21"
   },
   {
@@ -102,13 +93,11 @@
     "CountryName": "United States",
     "Population": 2000,
     "EvangelicalLevel": "Less than 2%",
-    "GSEC": 1,
     "LanguageName": "English",
     "LanguageCode": "eng",
     "ReligionName": "Islam",
     "Lat": 38.9072,
     "Long": -77.0369,
-    "LocationDescription": "Washington, D.C.: northwest",
     "CaptureDate": "2026-11-21"
   },
   {
@@ -118,13 +107,11 @@
     "CountryName": "United States",
     "Population": 3000,
     "EvangelicalLevel": "Less than 2%",
-    "GSEC": 0,
     "LanguageName": "Somali",
     "LanguageCode": "som",
     "ReligionName": "Islam",
     "Lat": 47.6062,
     "Long": -122.3321,
-    "LocationDescription": "Washington: Puget Sound",
     "CaptureDate": "2026-11-21"
   },
   {
@@ -134,13 +121,11 @@
     "CountryName": "United States",
     "Population": 2500,
     "EvangelicalLevel": "Less than 2%",
-    "GSEC": 1,
     "LanguageName": "Example",
     "LanguageCode": "aaa",
     "ReligionName": "Islam",
     "Lat": 36.154,
     "Long": -95.9928,
-    "LocationDescription": "Oklahoma: Tulsa",
     "CaptureDate": "2026-11-21"
   },
   {
@@ -150,13 +135,11 @@
     "CountryName": "United States",
     "Population": 7000,
     "EvangelicalLevel": "5% or Greater but Less than 10%",
-    "GSEC": 5,
     "LanguageName": "English",
     "LanguageCode": "eng",
     "ReligionName": "Christianity",
     "Lat": 35.4676,
     "Long": -97.5164,
-    "LocationDescription": "Oklahoma: Oklahoma City",
     "CaptureDate": "2026-11-21"
   }
 ]

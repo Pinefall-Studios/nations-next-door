@@ -1,19 +1,26 @@
 import type { CallToolResult } from "@modelcontextprotocol/server";
-import { IMB_ATTRIBUTION } from "../core/attribution.js";
+import { imbAttribution } from "../core/attribution.js";
 import { PeopleGroupsError } from "../core/errors.js";
 import type { PeopleGroupsService } from "../core/service.js";
 
 export const SERVER_INSTRUCTIONS = [
   "Nations Next Door answers who is unreached in a US state or a country, using public aggregate people-group data from IMB Global Research (PeopleGroups.org).",
-  "Unreached means less than 2% evangelical, which is IMB's definition.",
+  "Unreached is a yes or no from the evangelical band: yes means less than 2% evangelical. Do not report GSEC or engagement.",
   "Keep the IMB attribution that every tool returns with any fact you repeat.",
   "Do not answer questions about field workers, missionaries, local believers, congregations, or engagement in restricted-access places. This server does not have that data and will not infer it.",
   "Two-letter codes mean different things in different tools: in the country tool, GA is Gabon and CA is Canada; in the US state tool, GA is Georgia and CA is California.",
 ].join(" ");
 
 function present(payload: unknown): CallToolResult {
+  const attribution =
+    typeof payload === "object" &&
+    payload !== null &&
+    "attribution" in payload &&
+    typeof payload.attribution === "string"
+      ? payload.attribution
+      : imbAttribution(new Date());
   return {
-    content: [{ type: "text", text: `${IMB_ATTRIBUTION}\n\n${JSON.stringify(payload, null, 2)}` }],
+    content: [{ type: "text", text: `${attribution}\n\n${JSON.stringify(payload, null, 2)}` }],
   };
 }
 

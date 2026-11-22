@@ -1,11 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { IMB_ATTRIBUTION } from "../src/core/attribution.js";
+import { imbAttribution } from "../src/core/attribution.js";
 import { PeopleGroupNotFoundError, QueryTooBroadError, UnknownPlaceError } from "../src/core/errors.js";
 import { createPeopleGroupsService } from "../src/core/service.js";
 import { SENTINELS, jsonResponse, loadFixture, poison } from "./helpers.js";
 
 const recorded = loadFixture<{ record: Record<string, unknown> }>("recorded-pg012345.json").record;
-const usa = loadFixture<Record<string, unknown>[]>("usa-groups.json").map((group) => poison(group));
+const LOCATION_TEXT: Record<string, string> = {
+  PG900002: "Louisiana: coast; Texas: small border area SENTINEL_LOCATION_TEXT",
+  PG900004: "Texas: SENTINEL_LOCATION_TEXT near Lufkin",
+  PG900006: "West Virginia: Charleston",
+  PG900007: "Washington, D.C.: northwest",
+  PG900008: "Washington: Puget Sound",
+  PG900009: "Oklahoma: Tulsa",
+  PG900010: "Oklahoma: Oklahoma City",
+};
+const usa = loadFixture<Record<string, unknown>[]>("usa-groups.json").map((group) => {
+  const pgid = String(group.PGID);
+  const location = LOCATION_TEXT[pgid];
+  return poison(location ? { ...group, LocationDescription: location } : group);
+});
 const reachedBenin = poison({
   PGID: "PG900099",
   DisplayName: "Reached Benin Group",
@@ -13,7 +26,6 @@ const reachedBenin = poison({
   CountryName: "Benin",
   Population: 10,
   EvangelicalLevel: "5% or Greater but Less than 10%",
-  GSEC: 5,
   LanguageName: "French",
   LanguageCode: "fra",
   ReligionName: "Christianity",
@@ -67,10 +79,10 @@ describe("PeopleGroups service", () => {
     const result = await service.listUnreachedByCountry({ country: "Benin" });
     expect(result.total).toBe(1);
     expect(result.groups.map((group) => group.pgid)).toEqual(["PG012345"]);
-    expect(result.attribution).toBe(IMB_ATTRIBUTION);
+    expect(result.attribution).toBe(imbAttribution(new Date(0)));
     expect(result.sources[0]?.id).toBe("imb-peoplegroups");
     expect(calls.some((url) => url.includes("country=BEN"))).toBe(true);
-    expect(calls.some((url) => url.includes("engagement=") || url.includes("/export"))).toBe(false);
+    expect(calls.some((url) => url.includes("engagement=") || url.includes("gsec=") || url.includes("/export"))).toBe(false);
     const text = JSON.stringify(result);
     for (const sentinel of SENTINELS) expect(text).not.toContain(sentinel);
   });
@@ -145,7 +157,8 @@ describe("PeopleGroups service", () => {
     const { service, calls } = serviceWith();
     const details = await service.getPeopleGroup({ pgid: "pg012345" });
     expect(details.group.name).toBe("Nateni");
-    expect(details.group.reachedStatus).toBe("unreached");
+    expect(details.group.unreached).toBe(true);
+    expect(details.group.evangelicalBand).toBe("Less than 2%");
     expect(JSON.stringify(details)).not.toContain("SENTINEL_FIELD_WORKERS");
     expect(calls[0]).toContain("/people-groups/PG012345");
     await expect(service.getPeopleGroup({ pgid: "PG999999" })).rejects.toBeInstanceOf(

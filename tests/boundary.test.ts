@@ -15,6 +15,61 @@ function typescriptFiles(directory: string): string[] {
   return files;
 }
 
+const FORBIDDEN_FIXTURE_KEYS = [
+  "GSEC",
+  "GSECDescription",
+  "GSECLongDescription",
+  "GSECbrf",
+  "GSEClng",
+  "EngStat",
+  "EngagementStatus",
+  "EngagementProgress",
+  "EngagementProgressDesc",
+  "SPI",
+  "SPIdesc",
+  "CongExst",
+  "CongregationsExist",
+  "Plnting",
+  "ChurchPlantingWithinLast2Years",
+  "LocationDesc",
+  "LocationDescription",
+  "PicURL",
+  "PhotoURL",
+  "PhotoCredit",
+  "FieldWorkers",
+  "Missionaries",
+  "LocalBelievers",
+  "SecurityLevel",
+];
+
+function keysOf(value: unknown, found: Set<string>): void {
+  if (Array.isArray(value)) {
+    for (const item of value) keysOf(item, found);
+    return;
+  }
+  if (typeof value === "object" && value !== null) {
+    for (const [key, child] of Object.entries(value)) {
+      found.add(key);
+      keysOf(child, found);
+    }
+  }
+}
+
+describe("fixtures", () => {
+  it("does not store engagement, GSEC, photos, or location narratives", () => {
+    const directory = path.join(root, "tests/fixtures");
+    const files = readdirSync(directory).filter((name) => name.endsWith(".json"));
+    expect(files.length).toBeGreaterThan(0);
+    for (const name of files) {
+      const found = new Set<string>();
+      keysOf(JSON.parse(readFileSync(path.join(directory, name), "utf8")), found);
+      for (const key of FORBIDDEN_FIXTURE_KEYS) {
+        expect(found, `${name} contains ${key}`).not.toContain(key);
+      }
+    }
+  });
+});
+
 describe("core library boundary", () => {
   it("keeps the MCP SDK out of the data layer", () => {
     const files = typescriptFiles(path.join(root, "src/core"));

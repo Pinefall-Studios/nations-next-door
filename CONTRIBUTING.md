@@ -21,8 +21,8 @@ Do not add that script to CI.
 
 ## Data rules
 
-- Return public, aggregate fields only: name, population, language and code, religion, reached or unreached status, GSEC, and the other fields on the allowlist in `src/core/project.ts`.
-- Do not request, store, log, or return field workers, missionaries, local believers, congregations, or engagement details. If a payload contains them, the allowlist drops them. Add a test when a new sensitive field shows up.
+- Return public, aggregate fields only: name, population, language and code, religion, an unreached yes or no, the evangelical band, and the other fields on the allowlist in `src/core/project.ts`.
+- Do not request, store, log, or return GSEC, photos, location narratives, field workers, missionaries, local believers, congregations, or engagement details. If a payload contains them, the allowlist drops them. Add a test when a new sensitive field shows up. Do not commit those fields in fixtures.
 - Do not bulk-download or commit a provider's dataset. Fixtures are small, and sensitive values in them are sentinels.
 - Do not commit API keys, `.env`, or real tokens. `.env.example` stays placeholders.
 - Attribute every source in the tool or page that shows its data.

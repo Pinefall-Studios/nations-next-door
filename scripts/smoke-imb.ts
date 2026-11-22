@@ -1,16 +1,25 @@
 import { createPeopleGroupsService } from "../src/core/index.js";
 
 const BANNED = [
+  "GSEC",
+  "EngStat",
   "EngagementStatus",
   "EngagementProgress",
+  "SPI",
+  "SPIdesc",
+  "CongExst",
   "CongregationsExist",
+  "Plnting",
   "ChurchPlanting",
+  "GSEClng",
+  "LocationDesc",
+  "LocationDescription",
+  "PicURL",
+  "PhotoURL",
   "FieldWorkers",
   "Missionaries",
   "LocalBelievers",
-  "PejorativeAltNames",
-  "PhotoURL",
-  "LocationDescription",
+  "SecurityLevel",
 ];
 
 function assertClean(label: string, value: unknown): void {
@@ -27,14 +36,15 @@ function line(group: {
   country: string | null;
   population: number | null;
   primaryLanguage: { name: string | null; code: string | null };
-  reachedStatus: string;
-  gsec: number | null;
+  unreached: boolean | null;
+  evangelicalBand: string | null;
   usStates: string[];
 }): string {
   const population = group.population === null ? "population unknown" : group.population.toLocaleString("en-US");
   const language = `${group.primaryLanguage.name ?? "language unknown"} (${group.primaryLanguage.code ?? "no code"})`;
   const states = group.usStates.length > 0 ? ` [${group.usStates.join(", ")}]` : "";
-  return `${group.name} — ${group.country ?? "country unknown"}${states} — ${population} — ${language} — ${group.reachedStatus} — GSEC ${group.gsec ?? "unknown"}`;
+  const unreached = group.unreached === null ? "unreached unknown" : group.unreached ? "unreached yes" : "unreached no";
+  return `${group.name} — ${group.country ?? "country unknown"}${states} — ${population} — ${language} — ${unreached} — ${group.evangelicalBand ?? "no evangelical band"}`;
 }
 
 async function main(): Promise<void> {
@@ -51,7 +61,7 @@ async function main(): Promise<void> {
   const benin = await service.listUnreachedByCountry({ country: "Benin", limit: 3 });
   assertClean("benin", benin);
   if (benin.total < 1) throw new Error("Expected at least one unreached group in Benin");
-  if (benin.groups.some((group) => group.reachedStatus !== "unreached")) {
+  if (benin.groups.some((group) => group.unreached !== true)) {
     throw new Error("Country list included a group that is not unreached");
   }
 
