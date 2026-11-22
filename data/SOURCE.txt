@@ -1,0 +1,10 @@
+US state boundaries used to place a people-group point in a state.
+
+Source geometry: US Census Bureau cartographic boundary files, simplified and
+redistributed by the us-atlas project (https://github.com/topojson/us-atlas),
+file states-10m.json, package version 3.0.1. Census boundary data is in the
+public domain.
+
+This GeoJSON was converted from that TopoJSON and limited to the 50 states and
+the District of Columbia. US territories were left out on purpose. It is a
+boundary file, not a copy of any people-group dataset.
