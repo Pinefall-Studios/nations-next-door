@@ -7,6 +7,7 @@ import type { MapCommand } from "../lib/map-command";
 import { commandFor } from "../lib/map-command";
 import { US_STATES } from "../lib/us-states";
 import { applyFilters, EMPTY_FILTERS, type Filters } from "../lib/filters";
+import { placeGroupDock, type DockPoint } from "../lib/group-dock";
 import { FilterBar } from "./FilterBar";
 import { GroupPanel } from "./GroupPanel";
 import { LibrarianPanel } from "./LibrarianPanel";
@@ -40,6 +41,23 @@ export function Explore({ initial }: { initial: Catalog }) {
   const [demo, setDemo] = useState(true);
   const listRef = useRef<HTMLUListElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const [dockPoint, setDockPoint] = useState<DockPoint | null>(null);
+  const onSelectedPoint = useCallback((point: DockPoint | null) => {
+    setDockPoint((prev) => {
+      if (!point && !prev) return prev;
+      if (
+        prev
+        && point
+        && Math.abs(prev.x - point.x) < 0.5
+        && Math.abs(prev.y - point.y) < 0.5
+        && prev.width === point.width
+        && prev.height === point.height
+      ) {
+        return prev;
+      }
+      return point;
+    });
+  }, []);
 
   useEffect(() => {
     fetch("/api/chat").then((res) => res.json()).then((body) => setDemo(Boolean(body.demo))).catch(() => setDemo(true));
@@ -92,6 +110,7 @@ export function Explore({ initial }: { initial: Catalog }) {
   const peekLine = scope === "us" && listed[0]
     ? `${countLine} · ${listed[0].name}`
     : resultLine;
+  const dock = placeGroupDock(dockPoint);
 
   useEffect(() => {
     if (!selected || ask) return;
@@ -186,6 +205,7 @@ export function Explore({ initial }: { initial: Catalog }) {
             sheetMode={ask ? "ask" : sheet}
             onSelect={select}
             onHover={setHover}
+            onSelectedPoint={onSelectedPoint}
             onScope={(next) => {
               setScope(next);
               setCommand(null);
@@ -199,9 +219,6 @@ export function Explore({ initial }: { initial: Catalog }) {
               <MiniBand band={hoverShown.group.evangelicalBand} />
             </div>
           ) : null}
-          {scope === "world" ? (
-            <p className="world-note">This view currently covers groups in the United States.</p>
-          ) : null}
           {command ? (
             <button type="button" className="undo-chip" onClick={() => {
               const previous = history.at(-1) ?? null;
@@ -212,15 +229,34 @@ export function Explore({ initial }: { initial: Catalog }) {
             </button>
           ) : null}
           {selectedGroup && !ask ? (
-            <aside className="group-dock" aria-label={`${selectedGroup.name} detail`}>
+            <aside
+              className="group-dock"
+              data-testid="group-dock"
+              data-flip={dock.flip}
+              aria-label={`${selectedGroup.name} detail`}
+              style={{
+                top: dock.top,
+                bottom: dock.bottom,
+                left: dock.left,
+                right: dock.right,
+                maxHeight: dock.maxHeight,
+              }}
+            >
               <div className="group-dock-head">
                 <p className="gold">People group</p>
                 <button type="button" className="quiet-btn" onClick={() => setSelected(null)}>Close</button>
               </div>
-              <GroupPanel
-                group={selectedGroup}
-                onAsk={() => setAsk(true)}
-              />
+              <div className="group-dock-body">
+                <GroupPanel
+                  group={selectedGroup}
+                  onAsk={() => setAsk(true)}
+                  compact
+                />
+              </div>
+              <div className="group-dock-actions">
+                <a className="btn" href={`/groups/${selectedGroup.pgid}#pray`}>Pray</a>
+                <button type="button" className="btn secondary" onClick={() => setAsk(true)}>Ask</button>
+              </div>
             </aside>
           ) : null}
         </div>
@@ -232,7 +268,8 @@ export function Explore({ initial }: { initial: Catalog }) {
               <button type="button" className="btn secondary" onClick={() => setSheet("half")}>Back</button>
             ) : (
               <>
-                <p className="nums">{sheet === "peek" && !ask ? peekLine : resultLine}</p>
+                <p className="nums list-count">{resultLine}</p>
+                {sheet === "peek" && !ask ? <p className="nums list-peek">{peekLine}</p> : null}
                 {ask ? (
                   <button type="button" className="btn secondary" onClick={() => setAsk(false)}>Close</button>
                 ) : (

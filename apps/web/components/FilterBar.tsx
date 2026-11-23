@@ -96,7 +96,7 @@ export function FilterBar({
           >
             Unreached only
           </button>
-          <label className={filters.language ? "chip-filter is-on" : "chip-filter"}>
+          <label className={filters.language ? "chip-filter language is-on" : "chip-filter language"}>
             Language
             <select value={filters.language} onChange={(event) => onChange({ ...filters, language: event.target.value })}>
               <option value="">Any</option>

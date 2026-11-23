@@ -18,6 +18,7 @@ import {
   type CameraPadding,
 } from "../lib/camera";
 import { ensureMapWorker } from "../lib/maplibre-worker";
+import type { DockPoint } from "../lib/group-dock";
 import type { MapCommand } from "../lib/map-command";
 import type { ViewGroup } from "../lib/view";
 
@@ -36,9 +37,9 @@ function chromeTopPadding(map: MapLibreMap, reserveUndo: boolean): number {
   const wrap = map.getContainer().closest(".atlas-wrap") ?? map.getContainer().closest(".atlas");
   const mapRect = map.getContainer().getBoundingClientRect();
   let bottom = 0;
-  const toggle = wrap?.querySelector(".atlas-toggle");
-  if (toggle instanceof HTMLElement) {
-    bottom = Math.max(bottom, toggle.getBoundingClientRect().bottom - mapRect.top);
+  const chrome = wrap?.querySelector(".atlas-chrome") ?? wrap?.querySelector(".atlas-toggle");
+  if (chrome instanceof HTMLElement) {
+    bottom = Math.max(bottom, chrome.getBoundingClientRect().bottom - mapRect.top);
   }
   const chip = wrap?.querySelector(".undo-chip");
   if (chip instanceof HTMLElement) {
@@ -77,6 +78,7 @@ export function AtlasMap({
   sheetMode,
   onSelect,
   onHover,
+  onSelectedPoint,
   onScope,
 }: {
   groups: ViewGroup[];
@@ -88,6 +90,7 @@ export function AtlasMap({
   sheetMode: string;
   onSelect: (pgid: string | null) => void;
   onHover: (info: HoverInfo | null) => void;
+  onSelectedPoint?: (point: DockPoint | null) => void;
   onScope: (scope: "us" | "world") => void;
 }) {
   const mapRef = useRef<MapRef>(null);
@@ -200,6 +203,53 @@ export function AtlasMap({
     });
   }, [selectedPgid, groups, command, sheetMode]);
 
+  useEffect(() => {
+    if (!onSelectedPoint) return;
+    let cancelled = false;
+    let retry = 0;
+    let detach: (() => void) | undefined;
+
+    function report(map: MapLibreMap) {
+      const group = groups.find((item) => item.pgid === selectedPgid);
+      const canvas = map.getContainer();
+      if (!group || group.latitude === null || group.longitude === null) {
+        onSelectedPoint?.(null);
+        return;
+      }
+      const pt = map.project([group.longitude, group.latitude]);
+      onSelectedPoint?.({
+        x: Math.round(pt.x),
+        y: Math.round(pt.y),
+        width: canvas.clientWidth,
+        height: canvas.clientHeight,
+      });
+    }
+
+    function attach() {
+      if (cancelled) return;
+      const map = nativeMap(mapRef.current);
+      if (!map) {
+        retry = window.setTimeout(attach, 80);
+        return;
+      }
+      const onMove = () => report(map);
+      report(map);
+      map.on("move", onMove);
+      map.on("resize", onMove);
+      detach = () => {
+        map.off("move", onMove);
+        map.off("resize", onMove);
+      };
+    }
+
+    attach();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(retry);
+      detach?.();
+    };
+  }, [selectedPgid, groups, onSelectedPoint]);
+
   function pick(event: MapMouseEvent): string | null {
     const features = event.features ?? [];
     const cluster = features.find((feature) => feature.layer.id === "clusters" || feature.layer.id === "cluster-count");
@@ -249,9 +299,14 @@ export function AtlasMap({
       aria-label={mapLabel}
       onKeyDown={onKeyDown}
     >
-      <div className="atlas-toggle segment" role="group" aria-label="Map">
-        <button type="button" aria-pressed={scope === "us"} onClick={() => onScope("us")}>United States</button>
-        <button type="button" aria-pressed={scope === "world"} onClick={() => onScope("world")}>World</button>
+      <div className="atlas-chrome">
+        <div className="atlas-toggle segment" role="group" aria-label="Map">
+          <button type="button" aria-pressed={scope === "us"} onClick={() => onScope("us")}>United States</button>
+          <button type="button" aria-pressed={scope === "world"} onClick={() => onScope("world")}>World</button>
+        </div>
+        {scope === "world" ? (
+          <p className="world-note">This view currently covers groups in the United States.</p>
+        ) : null}
       </div>
       <div
         data-testid="map-bloom"

@@ -49,6 +49,7 @@ test.describe("filter chip row", () => {
     const language = page.locator(".chip-row .chip-filter").filter({ hasText: "Language" });
     const menu = page.getByRole("button", { name: "Filters and sort" });
     await expect(language).toBeVisible();
+    await expect(language.locator("select")).toHaveCSS("opacity", "0");
     await expect(menu).toBeVisible();
     const languageBox = await language.boundingBox();
     const menuBox = await menu.boundingBox();
