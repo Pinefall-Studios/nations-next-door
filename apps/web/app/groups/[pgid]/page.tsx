@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Noto_Sans_Kannada } from "next/font/google";
 import { notFound } from "next/navigation";
 import { EvangelicalBand } from "../../../components/EvangelicalBand";
 import { Librarian } from "../../../components/Librarian";
@@ -7,8 +6,6 @@ import { LocatorMap } from "../../../components/LocatorMap";
 import { PatternTile } from "../../../components/PatternTile";
 import { SampleBanner, SiteFooter, SiteHeader } from "../../../components/SiteChrome";
 import { loadGroupPage } from "../../../lib/live-catalog";
-
-const kannada = Noto_Sans_Kannada({ subsets: ["kannada"], weight: ["500"] });
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +41,7 @@ export default async function GroupPage({
             <p className="gold">People group</p>
             <h1>{group.name}</h1>
             {group.nativeName ? (
-              <p className={`${kannada.className} native`} lang={group.languageCode === "kan" ? "kn" : undefined}>
+              <p className="native" lang={group.languageCode === "kan" ? "kn" : undefined}>
                 {group.nativeName}
               </p>
             ) : null}

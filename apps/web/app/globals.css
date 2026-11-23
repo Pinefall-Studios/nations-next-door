@@ -16,9 +16,11 @@
   --scale-3: #d58a60;
   --scale-4: #b4532a;
   --scale-5: #7e3418;
-  --font-ui: var(--font-inter), "Inter", sans-serif;
-  --font-display: var(--font-fraunces), "Fraunces", serif;
-  --font-kannada: var(--font-kannada), "Noto Sans Kannada", sans-serif;
+  --font-inter: "Inter", sans-serif;
+  --font-fraunces: "Fraunces", serif;
+  --font-kannada: "Noto Sans Kannada", sans-serif;
+  --font-ui: var(--font-inter);
+  --font-display: var(--font-fraunces);
   color: var(--ink);
   background: var(--paper);
   font-family: var(--font-ui);

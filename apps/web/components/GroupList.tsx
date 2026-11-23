@@ -1,10 +1,7 @@
 import Link from "next/link";
-import { Noto_Sans_Kannada } from "next/font/google";
 import { shortBand } from "../lib/band";
 import type { ViewGroup } from "../lib/view";
 import { PatternTile } from "./PatternTile";
-
-const kannada = Noto_Sans_Kannada({ subsets: ["kannada"], weight: ["500"] });
 
 export function GroupList({ groups }: { groups: ViewGroup[] }) {
   if (groups.length === 0) {
@@ -22,7 +19,7 @@ export function GroupList({ groups }: { groups: ViewGroup[] }) {
               {group.usStates.length > 0 ? ` · ${group.usStates.join(", ")}` : ""}
             </p>
             {group.nativeName ? (
-              <p className={`${kannada.className} native`} lang={group.languageCode === "kan" ? "kn" : undefined}>
+              <p className="native" lang={group.languageCode === "kan" ? "kn" : undefined}>
                 {group.nativeName}
               </p>
             ) : null}

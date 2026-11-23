@@ -1,24 +1,13 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, Noto_Sans_Kannada } from "next/font/google";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/fraunces/500.css";
+import "@fontsource/fraunces/600.css";
+import "@fontsource/noto-sans-kannada/400.css";
+import "@fontsource/noto-sans-kannada/500.css";
+import "@fontsource/noto-sans-kannada/600.css";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-inter",
-});
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["500", "600"],
-  variable: "--font-fraunces",
-});
-
-const kannada = Noto_Sans_Kannada({
-  subsets: ["kannada"],
-  weight: ["400", "600"],
-  variable: "--font-kannada",
-});
 
 export const metadata: Metadata = {
   title: "Nations Next Door",
@@ -32,8 +21,8 @@ export const viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${fraunces.variable} ${kannada.variable}`}>
-      <body style={{ fontFamily: "var(--font-ui)" }}>{children}</body>
+    <html lang="en">
+      <body>{children}</body>
     </html>
   );
 }
