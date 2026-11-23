@@ -11,6 +11,7 @@ const PLACE: Record<string, { country?: string; state?: string }> = {
   Louisiana: { state: "LA" },
   Benin: { country: "Benin" },
   Afghanistan: { country: "Afghanistan" },
+  Guatemala: { country: "Guatemala" },
   Andorra: { country: "Andorra" },
 };
 

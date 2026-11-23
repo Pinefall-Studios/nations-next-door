@@ -45,6 +45,9 @@ function fromSeed(seed: SampleSeed): ViewGroup {
     bible: seed.bible ?? null,
     jesusFilm: seed.jesusFilm ?? null,
     audio: seed.audio ?? null,
+    gospel: seed.gospel ?? null,
+    stories: seed.stories ?? null,
+    radio: seed.radio ?? null,
     links: linksFor(seed),
     dataDate: seed.dataDate ?? "2026-11-23",
   };

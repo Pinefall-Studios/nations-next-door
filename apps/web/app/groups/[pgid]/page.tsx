@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Noto_Sans_Kannada } from "next/font/google";
 import { notFound } from "next/navigation";
-
-const kannada = Noto_Sans_Kannada({ subsets: ["kannada"], weight: ["500"] });
+import { EvangelicalBand } from "../../../components/EvangelicalBand";
 import { Librarian } from "../../../components/Librarian";
+import { LocatorMap } from "../../../components/LocatorMap";
 import { PatternTile } from "../../../components/PatternTile";
 import { SampleBanner, SiteFooter, SiteHeader } from "../../../components/SiteChrome";
 import { getCatalog, getGroup } from "../../../lib/catalog";
+
+const kannada = Noto_Sans_Kannada({ subsets: ["kannada"], weight: ["500"] });
 
 export default async function GroupPage({
   params,
@@ -39,10 +41,7 @@ export default async function GroupPage({
                 {group.nativeName}
               </p>
             ) : null}
-            <p className="status">
-              Unreached: {group.unreached === null ? "not stated" : group.unreached ? "yes" : "no"}.
-              Evangelical band: {group.evangelicalBand ?? "not stated"}. This is the only gospel-access note on this page.
-            </p>
+            <EvangelicalBand band={group.evangelicalBand} unreached={group.unreached} />
             <p className="notice">Source: {catalog.attribution}</p>
             <ul className="facts">
               <li><span>Population</span><strong className="nums">{group.population?.toLocaleString("en-US") ?? "Not stated"}</strong></li>
@@ -57,11 +56,16 @@ export default async function GroupPage({
                 </strong>
               </li>
             </ul>
-            {group.coordinatesRounded ? (
-              <p className="notice">This country is on the Open Doors World Watch List. The point is rounded to about 11 km. The pattern tile is used instead of a photo.</p>
-            ) : (
-              <p className="notice">Pattern tile. People-group photos are not shown.</p>
-            )}
+            {group.latitude !== null && group.longitude !== null ? (
+              <LocatorMap
+                latitude={group.latitude}
+                longitude={group.longitude}
+                countryCode={group.countryCode}
+                usStates={group.usStates}
+                rounded={group.coordinatesRounded}
+              />
+            ) : null}
+            <p className="notice">Pattern tile. People-group photos are not shown.</p>
             {group.summary ? <p>{group.summary}</p> : null}
             <p className="gold">Resources in {group.languageName}</p>
             <div className="chips">
@@ -72,9 +76,16 @@ export default async function GroupPage({
               ))}
             </div>
             <ul className="facts">
-              <li><span>Bible</span><strong>{group.bible ?? "Not in this sample"}</strong></li>
-              <li><span>Jesus Film</span><strong>{group.jesusFilm ?? "Not in this sample"}</strong></li>
-              <li><span>Audio</span><strong>{group.audio ?? "Not in this sample"}</strong></li>
+              {[
+                ["Bible", group.bible],
+                ["Jesus Film", group.jesusFilm],
+                ["Audio", group.audio],
+                ["Gospel", group.gospel],
+                ["Stories", group.stories],
+                ["Radio", group.radio],
+              ].filter((row): row is [string, string] => typeof row[1] === "string").map(([label, value]) => (
+                <li key={label}><span>{label}</span><strong>{value}</strong></li>
+              ))}
             </ul>
             {group.links.map((link) => (
               <p key={`${link.label}-note`} className="notice">{link.notice}</p>

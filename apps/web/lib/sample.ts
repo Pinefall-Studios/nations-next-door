@@ -21,6 +21,9 @@ export type SampleSeed = {
   bible?: string | null;
   jesusFilm?: string | null;
   audio?: string | null;
+  gospel?: string | null;
+  stories?: string | null;
+  radio?: string | null;
   summary?: string;
   dataDate?: string;
 };
@@ -39,6 +42,12 @@ export const SAMPLE_SEEDS: SampleSeed[] = [
     evangelicalLevel: "Less than 2%",
     lat: 7.18,
     lng: 2.07,
+    bible: "Available",
+    jesusFilm: "Available",
+    audio: "Available",
+    gospel: "Available",
+    stories: "Not Available",
+    radio: "Available",
   },
   {
     pgid: "PG023938",
@@ -54,6 +63,11 @@ export const SAMPLE_SEEDS: SampleSeed[] = [
     lat: 34.27,
     lng: 64.62,
     bible: "Available",
+    jesusFilm: "Available",
+    audio: "Available",
+    gospel: "Available",
+    stories: "Not Available",
+    radio: "Available",
   },
   {
     pgid: "PG049288",
@@ -100,6 +114,11 @@ export const SAMPLE_SEEDS: SampleSeed[] = [
     lng: -95.37,
     usStates: ["TX"],
     bible: "Available",
+    jesusFilm: "Available",
+    audio: "Available",
+    gospel: "Available",
+    stories: "Available",
+    radio: "Not Available",
   },
   {
     pgid: "PG012345",
@@ -117,6 +136,9 @@ export const SAMPLE_SEEDS: SampleSeed[] = [
     bible: "Available",
     jesusFilm: "Not Available",
     audio: "Available",
+    gospel: "Available",
+    stories: "Not Available",
+    radio: "Not Available",
     summary: "a Gurma people of northwestern Benin straddling the Togo border, known also as Natemba",
     dataDate: "2026-11-21",
   },
@@ -133,5 +155,25 @@ export const SAMPLE_SEEDS: SampleSeed[] = [
     evangelicalLevel: "Less than 2%",
     lat: 42.49,
     lng: 1.52,
+  },
+  {
+    pgid: "PG024737",
+    name: "Quiche",
+    nativeName: "K'iche'",
+    country: "Guatemala",
+    countryCode: "GTM",
+    population: 3220000,
+    languageName: "K'iche'",
+    languageCode: "quc",
+    religion: "Ethnoreligion",
+    evangelicalLevel: "2% or Greater but Less than 5%",
+    lat: 14.82,
+    lng: -91.33,
+    bible: "Available",
+    jesusFilm: "Available",
+    audio: "Available",
+    gospel: "Available",
+    stories: "Not Available",
+    radio: "Not Available",
   },
 ];

@@ -29,6 +29,10 @@ export function MapExplorer({
   return (
     <div className="layout with-side">
       <div className="map-card">
+        <div className="map-heading">
+          <h2>Where this sample lives</h2>
+          <p className="quiet">Deeper ember means more unreached groups in this set. The map is the doorway. The list is the work.</p>
+        </div>
         <div className="map-toolbar">
           <div className="segment" role="group" aria-label="Map">
             <button type="button" aria-pressed={scope === "states"} onClick={() => { setScope("states"); setSelected("TX"); }}>

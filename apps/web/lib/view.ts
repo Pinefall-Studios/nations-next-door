@@ -24,6 +24,9 @@ export type ViewGroup = {
   bible: string | null;
   jesusFilm: string | null;
   audio: string | null;
+  gospel: string | null;
+  stories: string | null;
+  radio: string | null;
   links: ResourceLink[];
   dataDate: string | null;
 };

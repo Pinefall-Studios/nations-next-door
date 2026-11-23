@@ -17,10 +17,12 @@ export default function HomePage() {
       <SampleBanner label={catalog.sampleLabel} attribution={catalog.attribution} />
       <main className="shell">
         <section className="hero">
-          <h1>Who is unreached near you?</h1>
-          <p className="lede">
-            A quiet look at people groups, the language they speak, and the free Scripture already published for them.
-          </p>
+          <div className="hero-copy">
+            <h1>Who is unreached near you?</h1>
+            <p className="lede">
+              A quiet look at people groups, the language they speak, and the free Scripture already published for them.
+            </p>
+          </div>
           <form className="picker" action="/groups">
             <label>
               <span>State or country</span>
@@ -29,6 +31,7 @@ export default function HomePage() {
                 <option>Louisiana</option>
                 <option>Benin</option>
                 <option>Afghanistan</option>
+                <option>Guatemala</option>
                 <option>Andorra</option>
               </select>
             </label>
@@ -36,8 +39,6 @@ export default function HomePage() {
           </form>
         </section>
         <section className="section">
-          <h2>Explore</h2>
-          <p className="quiet">Deeper ember means more unreached groups in this view. The map is the doorway. The list is the work.</p>
           <MapExplorer states={states} countries={countries} groups={catalog.groups} />
         </section>
         <section className="section">
