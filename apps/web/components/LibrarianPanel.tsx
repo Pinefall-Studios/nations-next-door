@@ -140,6 +140,9 @@ export function LibrarianPanel({
             {entry.groups.map((group) => (
               <button key={group.pgid} type="button" className="mini-card" onClick={() => onOpenGroup(group.pgid)}>
                 <strong>{group.name}</strong>
+                <span>
+                  {group.population?.toLocaleString("en-US") ?? "Population not listed"} · {group.languageName ?? "language not listed"}
+                </span>
                 <span>{group.country}{group.usStates.length ? ` · ${group.usStates.join(", ")}` : ""}</span>
               </button>
             ))}

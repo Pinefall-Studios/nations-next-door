@@ -57,7 +57,9 @@ export const BASEMAP_STYLE: StyleSpecification = {
         "text-field": ["get", "name"],
         "text-font": ["Noto Sans Regular"],
         "text-size": 11,
-        "text-padding": 8,
+        "text-padding": 28,
+        "symbol-avoid-edges": true,
+        "text-max-width": 8,
       },
       paint: {
         "text-color": "#6B6158",
@@ -76,6 +78,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
         "text-field": ["get", "name"],
         "text-font": ["Noto Sans Regular"],
         "text-size": 11,
+        "text-padding": 24,
+        "symbol-avoid-edges": true,
       },
       paint: {
         "text-color": "#6B6158",
@@ -94,6 +98,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
         "text-field": ["get", "name"],
         "text-font": ["Noto Sans Regular"],
         "text-size": 11,
+        "text-padding": 20,
+        "symbol-avoid-edges": true,
       },
       paint: {
         "text-color": "#6B6158",

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { imbShortCreditFrom } from "../../../src/core/attribution";
 
 export function SiteHeader({ current }: { current?: "explore" | "groups" }) {
   return (
@@ -32,9 +33,20 @@ export function SampleBanner({ label, attribution }: { label: string | null; att
   );
 }
 
+export function SourceBanner({ attribution, sample }: { attribution: string; sample?: boolean }) {
+  const line = sample
+    ? `Sample data · ${imbShortCreditFrom(attribution)}`
+    : imbShortCreditFrom(attribution);
+  return (
+    <a className="banner is-slim source-jump" href="#source">
+      <div className="shell">{line}</div>
+    </a>
+  );
+}
+
 export function SiteFooter({ attribution }: { attribution: string }) {
   return (
-    <footer className="site-footer">
+    <footer className="site-footer" id="source">
       <div className="shell footer-row">
         <p>
           {attribution}

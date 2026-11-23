@@ -17,6 +17,25 @@ type HoverInfo = { group: ViewGroup; x: number; y: number };
 const US_VIEW = { longitude: -96.8, latitude: 37.8, zoom: 3.5 };
 const WORLD_VIEW = { longitude: 8, latitude: 18, zoom: 1.6 };
 
+function cameraPadding(map: MapRef, insetBottom: number, kind: "fit" | "point" | "scope") {
+  const mobile = window.matchMedia("(max-width: 959px)").matches;
+  const canvas = map.getMap().getContainer();
+  const width = canvas.clientWidth || window.innerWidth;
+  const height = canvas.clientHeight || window.innerHeight;
+  if (mobile) {
+    const bottom = Math.max(Math.round(insetBottom) || Math.round(height * 0.58), 72);
+    return { top: 56, bottom, left: 24, right: 24 };
+  }
+  if (kind === "fit") {
+    const dock = 372;
+    const usable = Math.max(width - dock, 240);
+    const padX = Math.round(usable * 0.15);
+    const padY = Math.round(height * 0.15);
+    return { top: padY, bottom: padY, left: padX, right: dock + padX };
+  }
+  return { top: 72, bottom: 72, left: 48, right: 80 };
+}
+
 export function AtlasMap({
   groups,
   scope,
@@ -24,6 +43,7 @@ export function AtlasMap({
   highlightedPgids,
   command,
   bloom,
+  insetBottom = 0,
   onSelect,
   onHover,
   onScope,
@@ -34,6 +54,7 @@ export function AtlasMap({
   highlightedPgids: string[];
   command: MapCommand | null;
   bloom: boolean;
+  insetBottom?: number;
   onSelect: (pgid: string | null) => void;
   onHover: (info: HoverInfo | null) => void;
   onScope: (scope: "us" | "world") => void;
@@ -84,10 +105,7 @@ export function AtlasMap({
     if (!map) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const duration = reduce ? 0 : 500;
-    const mobile = window.matchMedia("(max-width: 959px)").matches;
-    const padding = mobile
-      ? { top: 56, bottom: Math.round(window.innerHeight * 0.48), left: 36, right: 36 }
-      : { top: 72, bottom: 72, left: 48, right: 48 };
+    const padding = cameraPadding(map, insetBottom, command?.bounds ? "fit" : "scope");
     if (command?.bounds) {
       const [west, south, east, north] = command.bounds;
       map.fitBounds([[west, south], [east, north]], { padding, duration, easing: (t) => 1 - (1 - t) ** 3 });
@@ -95,7 +113,7 @@ export function AtlasMap({
     }
     const view = scope === "us" ? US_VIEW : WORLD_VIEW;
     map.easeTo({ ...view, duration, padding });
-  }, [command, scope]);
+  }, [command, scope, insetBottom]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -103,15 +121,12 @@ export function AtlasMap({
     if (!map || !group || group.latitude === null || group.longitude === null) return;
     if (command?.pgids.includes(group.pgid)) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const mobile = window.matchMedia("(max-width: 959px)").matches;
     map.easeTo({
       center: [group.longitude, group.latitude],
       duration: reduce ? 0 : 400,
-      padding: mobile
-        ? { top: 56, bottom: Math.round(window.innerHeight * 0.48), left: 36, right: 36 }
-        : { top: 80, bottom: 80, left: 80, right: 80 },
+      padding: cameraPadding(map, insetBottom, "point"),
     });
-  }, [selectedPgid, groups, command]);
+  }, [selectedPgid, groups, command, insetBottom]);
 
   function pick(event: MapMouseEvent): string | null {
     const features = event.features ?? [];

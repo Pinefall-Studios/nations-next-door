@@ -84,14 +84,26 @@ const ENGAGEMENT_PROSE = /plant|engag|worker|missionar|believer|congregat|gsec/i
 export function unreachedFromBand(band: string | null): boolean | null {
   if (!band) return null;
   const value = band.toLowerCase();
-  if (value.includes("less than 2") || value.includes("< 2") || value.includes("<2")) return true;
-  const numeric = value.match(/(\d+(?:\.\d+)?)\s*%/);
-  const first = numeric?.[1];
-  if (first !== undefined) {
-    const percent = Number(first);
-    if (Number.isFinite(percent)) return percent < 2;
+  // Longer bands first: "less than 20" contains the substring "less than 2".
+  if (/less than 20/.test(value) || /less than 10/.test(value) || /less than 5/.test(value)) return false;
+  if (/less than 2/.test(value) || /<\s*2(?:\.0+)?\s*%/.test(value)) return true;
+  const percents = [...value.matchAll(/(\d+(?:\.\d+)?)\s*%/g)].map((match) => Number(match[1]));
+  if (percents.some((percent) => Number.isFinite(percent))) {
+    if (/greater|at least|or more/.test(value)) return false;
+    return percents.every((percent) => percent < 2);
   }
   return null;
+}
+
+/** 0 = 20%+, 4 = under 2%. Used to sort deepest band first. */
+export function evangelicalBandDepth(band: string | null): number {
+  if (!band) return 2;
+  const value = band.toLowerCase();
+  if (/less than 20/.test(value)) return 1;
+  if (/less than 10/.test(value)) return 2;
+  if (/less than 5/.test(value)) return 3;
+  if (/less than 2/.test(value) || /<\s*2(?:\.0+)?\s*%/.test(value)) return 4;
+  return 0;
 }
 
 function evangelicalBand(value: unknown): string | null {
@@ -169,6 +181,7 @@ export function toPublicPeopleGroup(raw: unknown): PublicPeopleGroup | null {
     pgid,
     peid: wholeNumber(pick(raw, ["PEID"])),
     name,
+    nativeName: shortText(pick(raw, ["NativeName", "NmNative", "IndigenousName", "NameNative"]), 200),
     alternateNames: shortText(pick(raw, ["AlternateNames", "NmAlt"]), 300),
     country: shortText(pick(raw, ["CountryName", "Ctry", "CountryDisplayName"]), 80),
     countryCode: code,

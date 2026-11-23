@@ -111,8 +111,8 @@ function boundsOf(groups: ChatGroup[]): [number, number, number, number] | null 
   const east = Math.max(...lngs);
   const south = Math.min(...lats);
   const north = Math.max(...lats);
-  const padLng = Math.max((east - west) * 0.18, 1.2);
-  const padLat = Math.max((north - south) * 0.18, 1.2);
+  const padLng = Math.max((east - west) * 0.15, 0.8);
+  const padLat = Math.max((north - south) * 0.15, 0.8);
   return [west - padLng, south - padLat, east + padLng, north + padLat];
 }
 

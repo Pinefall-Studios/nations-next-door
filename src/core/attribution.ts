@@ -15,6 +15,18 @@ export function imbAttribution(when: Date): string {
   return `This information was provided by The International Mission Board - Global Research, ${month} ${year}, Nations Next Door, www.peoplegroups.org`;
 }
 
+/** One-line credit for the explore banner. Links to the full sentence in the footer. */
+export function imbShortCredit(when: Date): string {
+  const month = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" }).format(when);
+  return `Source: IMB Global Research · ${month} ${when.getUTCFullYear()}`;
+}
+
+export function imbShortCreditFrom(attribution: string): string {
+  const match = attribution.match(/Global Research,\s+([A-Za-z]+)\s+(\d{4})/);
+  if (!match?.[1] || !match[2]) return "Source: IMB Global Research · Nov 2026";
+  return `Source: IMB Global Research · ${match[1].slice(0, 3)} ${match[2]}`;
+}
+
 export function imbSource(when: Date): SourceCitation {
   return {
     id: "imb-peoplegroups",

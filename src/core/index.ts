@@ -1,4 +1,4 @@
-export { IMB_ATTRIBUTION_TEMPLATE, US_STATE_GEOGRAPHY_NOTE, imbAttribution, imbSource } from "./attribution.js";
+export { IMB_ATTRIBUTION_TEMPLATE, US_STATE_GEOGRAPHY_NOTE, imbAttribution, imbShortCredit, imbShortCreditFrom, imbSource } from "./attribution.js";
 export type { SourceCitation } from "./attribution.js";
 export {
   InvalidQueryError,
@@ -8,7 +8,7 @@ export {
   UnknownPlaceError,
 } from "./errors.js";
 export { resolveCountry } from "./places.js";
-export { toPublicPeopleGroup, unreachedFromBand } from "./project.js";
+export { evangelicalBandDepth, toPublicPeopleGroup, unreachedFromBand } from "./project.js";
 export { createPeopleGroupsService, normalizeLanguage, normalizePgid } from "./service.js";
 export type { PeopleGroupsOptions, PeopleGroupsService } from "./service.js";
 export {

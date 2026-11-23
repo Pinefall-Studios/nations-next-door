@@ -6,11 +6,12 @@ import type { Catalog, ViewGroup } from "../lib/view";
 import type { MapCommand } from "../lib/map-command";
 import { commandFor } from "../lib/map-command";
 import { US_STATES } from "../lib/us-states";
-import { applyFilters, EMPTY_FILTERS, FilterBar, type Filters } from "./FilterBar";
+import { applyFilters, EMPTY_FILTERS, type Filters } from "../lib/filters";
+import { FilterBar } from "./FilterBar";
 import { GroupPanel } from "./GroupPanel";
 import { LibrarianPanel } from "./LibrarianPanel";
 import { MiniBand } from "./MiniBand";
-import { SampleBanner, SiteFooter } from "./SiteChrome";
+import { SiteFooter, SourceBanner } from "./SiteChrome";
 
 const AtlasMap = dynamic(() => import("./AtlasMap").then((mod) => mod.AtlasMap), { ssr: false });
 
@@ -38,6 +39,8 @@ export function Explore({ initial }: { initial: Catalog }) {
   const [ask, setAsk] = useState(false);
   const [demo, setDemo] = useState(true);
   const listRef = useRef<HTMLUListElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [sheetHeight, setSheetHeight] = useState(0);
 
   useEffect(() => {
     fetch("/api/chat").then((res) => res.json()).then((body) => setDemo(Boolean(body.demo))).catch(() => setDemo(true));
@@ -84,6 +87,9 @@ export function Explore({ initial }: { initial: Catalog }) {
     ? (US_STATES.find(([code]) => code === filters.place)?.[1] ?? filters.place)
     : (scope === "us" ? "the United States" : "this view");
   const resultLine = `${listed.length} group${listed.length === 1 ? "" : "s"} in ${placeLabel}`;
+  const peekLine = listed[0]
+    ? `${listed.length} group${listed.length === 1 ? "" : "s"} · ${listed[0].name}`
+    : resultLine;
 
   useEffect(() => {
     if (!selected || ask) return;
@@ -91,11 +97,21 @@ export function Explore({ initial }: { initial: Catalog }) {
     row?.scrollIntoView({ block: "center", inline: "nearest" });
   }, [selected, sheet, ask]);
 
+  useEffect(() => {
+    const node = sheetRef.current;
+    if (!node) return;
+    const measure = () => setSheetHeight(node.getBoundingClientRect().height);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [ask, sheet]);
+
   const focus = useCallback((next: MapCommand) => {
     setHistory((current) => (command ? [...current, command] : current));
     setCommand(next);
     if (next.pgids[0]) setSelected(next.pgids[0]);
-    setSheet((current) => (current === "peek" ? "half" : current));
+    setSheet((current) => (current === "full" ? "half" : current === "peek" ? "half" : current));
     setBloom(true);
     window.setTimeout(() => setBloom(false), 650);
   }, [command]);
@@ -140,21 +156,16 @@ export function Explore({ initial }: { initial: Catalog }) {
 
   const tip = hoverShown ? tooltipPosition(hoverShown) : null;
 
-  const sheetUp = ask || sheet !== "peek";
   const showCard = Boolean(selectedGroup && sheet === "full" && !ask);
 
   return (
-    <div className={`explore${ask ? " is-ask" : ""}${sheetUp ? " is-sheet-up" : ""}`}>
+    <div className={`explore${ask ? " is-ask" : ""}${showCard ? " is-full-card" : ""}`}>
       {pending ? (
         <div className="banner is-slim" data-testid="data-loading">
           <div className="shell">Loading people groups…</div>
         </div>
-      ) : catalog.mode === "sample" ? (
-        <SampleBanner label={catalog.sampleLabel} attribution={catalog.attribution} />
       ) : (
-        <div className="banner is-slim">
-          <div className="shell">{catalog.attribution}</div>
-        </div>
+        <SourceBanner attribution={catalog.attribution} sample={catalog.mode === "sample"} />
       )}
       <FilterBar
         groups={catalog.groups}
@@ -175,6 +186,7 @@ export function Explore({ initial }: { initial: Catalog }) {
             highlightedPgids={command?.pgids ?? []}
             command={command}
             bloom={bloom}
+            insetBottom={sheetHeight}
             onSelect={select}
             onHover={setHover}
             onScope={(next) => {
@@ -189,6 +201,9 @@ export function Explore({ initial }: { initial: Catalog }) {
               <p>{hoverShown.group.population?.toLocaleString("en-US")} · {hoverShown.group.languageName}</p>
               <MiniBand band={hoverShown.group.evangelicalBand} />
             </div>
+          ) : null}
+          {scope === "world" ? (
+            <p className="world-note">This view currently covers groups in the United States.</p>
           ) : null}
           {command ? (
             <button type="button" className="undo-chip" onClick={() => {
@@ -212,17 +227,14 @@ export function Explore({ initial }: { initial: Catalog }) {
             </aside>
           ) : null}
         </div>
-        <div className={`sheet is-${ask ? "full" : sheet}`}>
+        <div ref={sheetRef} className={`sheet is-${ask ? "ask" : sheet}`}>
           <button type="button" className="grab" aria-label="Resize list" onClick={() => setSheet((current) => current === "peek" ? "half" : current === "half" ? "full" : "peek")} />
           <div className="sheet-head">
             {showCard && selectedGroup ? (
-              <>
-                <button type="button" className="btn secondary" onClick={() => setSheet("half")}>Back</button>
-                <a className="btn secondary" href={`/groups/${selectedGroup.pgid}`}>Open</a>
-              </>
+              <button type="button" className="btn secondary" onClick={() => setSheet("half")}>Back</button>
             ) : (
               <>
-                <p className="nums">{resultLine}</p>
+                <p className="nums">{sheet === "peek" && !ask ? peekLine : resultLine}</p>
                 {ask ? (
                   <button type="button" className="btn secondary" onClick={() => setAsk(false)}>Close</button>
                 ) : (
@@ -241,11 +253,19 @@ export function Explore({ initial }: { initial: Catalog }) {
               onOpenGroup={(pgid) => { setAsk(false); select(pgid); setSheet("full"); }}
             />
           ) : showCard && selectedGroup ? (
-            <GroupPanel
-              group={selectedGroup}
-              onAsk={() => setAsk(true)}
-              onClose={() => setSheet("half")}
-            />
+            <>
+              <div className="sheet-card">
+                <GroupPanel
+                  group={selectedGroup}
+                  onAsk={() => setAsk(true)}
+                  onClose={() => setSheet("half")}
+                />
+              </div>
+              <div className="sheet-footer">
+                <a className="btn" href={`/groups/${selectedGroup.pgid}#pray`}>Pray</a>
+                <button type="button" className="btn secondary" onClick={() => setAsk(true)}>Ask</button>
+              </div>
+            </>
           ) : (
             <ul className="sheet-list" ref={listRef}>
               {listed.map((group) => (
@@ -265,9 +285,6 @@ export function Explore({ initial }: { initial: Catalog }) {
                     <strong>{group.name}</strong>
                     <span>{group.country}{group.usStates.length ? ` · ${group.usStates.join(", ")}` : ""} · {group.population?.toLocaleString("en-US")}</span>
                   </button>
-                  {group.pgid === selected ? (
-                    <button type="button" className="btn secondary row-open" onClick={() => setSheet("full")}>Open</button>
-                  ) : null}
                 </li>
               ))}
             </ul>

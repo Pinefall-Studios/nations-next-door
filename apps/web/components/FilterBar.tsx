@@ -1,51 +1,11 @@
 "use client";
 
 import { shortBand } from "../lib/band";
+import { type Filters } from "../lib/filters";
 import { US_STATES } from "../lib/us-states";
 import type { ViewGroup } from "../lib/view";
 
-export type Filters = {
-  unreachedOnly: boolean;
-  language: string;
-  religion: string;
-  scripture: boolean;
-  place: string;
-  band: string;
-  popMin: string;
-  popMax: string;
-};
-
-export const EMPTY_FILTERS: Filters = {
-  unreachedOnly: true,
-  language: "",
-  religion: "",
-  scripture: false,
-  place: "",
-  band: "",
-  popMin: "",
-  popMax: "",
-};
-
-export function applyFilters(groups: ViewGroup[], filters: Filters): ViewGroup[] {
-  return groups.filter((group) => {
-    if (filters.unreachedOnly && group.unreached !== true) return false;
-    if (filters.language && group.languageCode !== filters.language && group.languageName !== filters.language) return false;
-    if (filters.religion && group.religion !== filters.religion) return false;
-    if (filters.scripture && group.bible !== "Available") return false;
-    if (filters.place) {
-      const place = filters.place.toUpperCase();
-      const inState = group.usStates.includes(place);
-      const inCountry = (group.countryCode ?? "").toUpperCase() === place || (group.country ?? "").toLowerCase() === filters.place.toLowerCase();
-      if (!inState && !inCountry) return false;
-    }
-    if (filters.band && group.evangelicalBand !== filters.band) return false;
-    const min = Number(filters.popMin);
-    const max = Number(filters.popMax);
-    if (filters.popMin && Number.isFinite(min) && (group.population ?? 0) < min) return false;
-    if (filters.popMax && Number.isFinite(max) && (group.population ?? 0) > max) return false;
-    return true;
-  });
-}
+export { applyFilters, EMPTY_FILTERS, type Filters } from "../lib/filters";
 
 export function FilterBar({
   groups,

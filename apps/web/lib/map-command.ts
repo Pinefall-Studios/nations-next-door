@@ -18,8 +18,8 @@ export function boundsFor(groups: ViewGroup[]): [number, number, number, number]
   const east = Math.max(...lngs);
   const south = Math.min(...lats);
   const north = Math.max(...lats);
-  const padLng = Math.max((east - west) * 0.2, 1.4);
-  const padLat = Math.max((north - south) * 0.2, 1.4);
+  const padLng = Math.max((east - west) * 0.15, 0.8);
+  const padLat = Math.max((north - south) * 0.15, 0.8);
   return [west - padLng, south - padLat, east + padLng, north + padLat];
 }
 

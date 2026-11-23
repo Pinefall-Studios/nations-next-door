@@ -20,6 +20,7 @@ export interface PublicPeopleGroup {
   pgid: string;
   peid: number | null;
   name: string;
+  nativeName: string | null;
   alternateNames: string | null;
   country: string | null;
   countryCode: string | null;
