@@ -25,6 +25,11 @@ export const metadata: Metadata = {
   description: "Who is unreached near you, and what free Scripture exists in their language?",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${fraunces.variable} ${kannada.variable}`}>

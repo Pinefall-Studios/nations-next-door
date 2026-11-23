@@ -1,6 +1,7 @@
 node_modules/
 .next/
 *.tsbuildinfo
+apps/web/public/maplibre-gl-worker.mjs
 dist/
 coverage/
 .env

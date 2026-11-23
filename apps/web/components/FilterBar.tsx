@@ -1,0 +1,145 @@
+"use client";
+
+import { shortBand } from "../lib/band";
+import { US_STATES } from "../lib/us-states";
+import type { ViewGroup } from "../lib/view";
+
+export type Filters = {
+  unreachedOnly: boolean;
+  language: string;
+  religion: string;
+  scripture: boolean;
+  place: string;
+  band: string;
+  popMin: string;
+  popMax: string;
+};
+
+export const EMPTY_FILTERS: Filters = {
+  unreachedOnly: true,
+  language: "",
+  religion: "",
+  scripture: false,
+  place: "",
+  band: "",
+  popMin: "",
+  popMax: "",
+};
+
+export function applyFilters(groups: ViewGroup[], filters: Filters): ViewGroup[] {
+  return groups.filter((group) => {
+    if (filters.unreachedOnly && group.unreached !== true) return false;
+    if (filters.language && group.languageCode !== filters.language && group.languageName !== filters.language) return false;
+    if (filters.religion && group.religion !== filters.religion) return false;
+    if (filters.scripture && group.bible !== "Available") return false;
+    if (filters.place) {
+      const place = filters.place.toUpperCase();
+      const inState = group.usStates.includes(place);
+      const inCountry = (group.countryCode ?? "").toUpperCase() === place || (group.country ?? "").toLowerCase() === filters.place.toLowerCase();
+      if (!inState && !inCountry) return false;
+    }
+    if (filters.band && group.evangelicalBand !== filters.band) return false;
+    const min = Number(filters.popMin);
+    const max = Number(filters.popMax);
+    if (filters.popMin && Number.isFinite(min) && (group.population ?? 0) < min) return false;
+    if (filters.popMax && Number.isFinite(max) && (group.population ?? 0) > max) return false;
+    return true;
+  });
+}
+
+export function FilterBar({
+  groups,
+  filters,
+  onChange,
+  onClear,
+  onNearMe,
+  moreOpen,
+  onMore,
+  resultLine,
+}: {
+  groups: ViewGroup[];
+  filters: Filters;
+  onChange: (next: Filters) => void;
+  onClear: () => void;
+  onNearMe: () => void;
+  moreOpen: boolean;
+  onMore: () => void;
+  resultLine: string;
+}) {
+  const languages = [...new Map(
+    groups
+      .filter((group) => group.languageCode)
+      .map((group) => [group.languageCode as string, group.languageName ?? group.languageCode as string]),
+  ).entries()];
+  const religions = [...new Set(groups.map((group) => group.religion).filter(Boolean))] as string[];
+  const bands = [...new Set(groups.map((group) => group.evangelicalBand).filter(Boolean))] as string[];
+  const countries = [...new Set(groups.map((group) => group.country).filter(Boolean))] as string[];
+
+  return (
+    <div className="filter-bar">
+      <div className="chip-row">
+        <button
+          type="button"
+          className={filters.unreachedOnly ? "chip-filter is-on" : "chip-filter"}
+          onClick={() => onChange({ ...filters, unreachedOnly: !filters.unreachedOnly })}
+        >
+          Unreached only
+        </button>
+        <label className={filters.language ? "chip-filter is-on" : "chip-filter"}>
+          Language
+          <select value={filters.language} onChange={(event) => onChange({ ...filters, language: event.target.value })}>
+            <option value="">Any</option>
+            {languages.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+          </select>
+        </label>
+        <label className={filters.religion ? "chip-filter is-on" : "chip-filter"}>
+          Religion
+          <select value={filters.religion} onChange={(event) => onChange({ ...filters, religion: event.target.value })}>
+            <option value="">Any</option>
+            {religions.map((name) => <option key={name} value={name}>{name}</option>)}
+          </select>
+        </label>
+        <button
+          type="button"
+          className={filters.scripture ? "chip-filter is-on" : "chip-filter"}
+          onClick={() => onChange({ ...filters, scripture: !filters.scripture })}
+        >
+          Scripture available
+        </button>
+        <label className={filters.place ? "chip-filter is-on" : "chip-filter"}>
+          Place
+          <select value={filters.place} onChange={(event) => onChange({ ...filters, place: event.target.value })}>
+            <option value="">Anywhere</option>
+            {US_STATES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+            {countries.map((name) => <option key={name} value={name}>{name}</option>)}
+          </select>
+        </label>
+        <button type="button" className="chip-filter more" onClick={onMore}>More filters</button>
+      </div>
+      <div className="filter-meta">
+        <p className="nums">{resultLine}</p>
+        <button type="button" className="quiet-btn" onClick={onClear}>Clear</button>
+        <button type="button" className="quiet-btn" onClick={onNearMe}>Near me</button>
+      </div>
+      {moreOpen ? (
+        <div className="more-filters">
+          <label>
+            <span>Evangelical band</span>
+            <select value={filters.band} onChange={(event) => onChange({ ...filters, band: event.target.value })}>
+              <option value="">Any</option>
+              {bands.map((item) => <option key={item} value={item}>{shortBand(item)}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Population from</span>
+            <input type="text" inputMode="numeric" value={filters.popMin} onChange={(event) => onChange({ ...filters, popMin: event.target.value })} />
+          </label>
+          <label>
+            <span>Population to</span>
+            <input type="text" inputMode="numeric" value={filters.popMax} onChange={(event) => onChange({ ...filters, popMax: event.target.value })} />
+          </label>
+        </div>
+      ) : null}
+    </div>
+  );
+}

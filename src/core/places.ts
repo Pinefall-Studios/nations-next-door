@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { UnknownPlaceError, InvalidQueryError } from "./errors.js";
+import { readNearbyFile } from "./read-data.js";
 import { fold, hasUnsafeQueryCharacters } from "./text.js";
 
 interface CountryCode {
@@ -10,7 +9,10 @@ interface CountryCode {
 }
 
 const countries = JSON.parse(
-  readFileSync(fileURLToPath(new URL("./data/iso3166.json", import.meta.url)), "utf8"),
+  readNearbyFile(import.meta.url, "./data/iso3166.json", [
+    "src/core/data/iso3166.json",
+    "../../src/core/data/iso3166.json",
+  ]),
 ) as CountryCode[];
 
 /**

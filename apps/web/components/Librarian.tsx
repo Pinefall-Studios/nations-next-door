@@ -31,7 +31,7 @@ export function Librarian({
     initialOpen
       ? [
           { role: "ask", text: SUGGESTIONS[0] ?? "" },
-          { role: "answer", text: demoAnswer(SUGGESTIONS[0] ?? "", groups, attribution) },
+          { role: "answer", text: demoAnswer(SUGGESTIONS[0] ?? "", groups, attribution).text },
         ]
       : [],
   );
@@ -40,7 +40,7 @@ export function Librarian({
     const question = text.trim();
     if (!question) return;
     const answer = demo
-      ? demoAnswer(question, groups, attribution)
+      ? demoAnswer(question, groups, attribution).text
       : "A live model key is configured, but this concept panel still answers from the sample set until the gateway path is reviewed.";
     setThread((current) => [...current, { role: "ask", text: question }, { role: "answer", text: answer }]);
     setDraft("");
