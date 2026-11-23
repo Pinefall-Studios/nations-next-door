@@ -33,3 +33,16 @@ jobs:
         working-directory: apps/web
       - run: npm run build
         working-directory: apps/web
+      - name: Smoke /api/groups from the production build
+        working-directory: apps/web
+        run: |
+          npx next start -H 127.0.0.1 -p 3456 &
+          pid=$!
+          trap 'kill $pid' EXIT
+          for i in $(seq 1 40); do
+            if curl -sf -o /dev/null http://127.0.0.1:3456/; then break; fi
+            sleep 0.25
+          done
+          code=$(curl -sS -o /tmp/groups-smoke.json -w '%{http_code}' --max-time 40 'http://127.0.0.1:3456/api/groups?country=USA&unreached=no')
+          test "$code" = "200"
+          python3 -c "import json; d=json.load(open('/tmp/groups-smoke.json')); assert d.get('groups'), d; assert d.get('mode') in ('live','sample'), d"

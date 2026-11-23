@@ -5,7 +5,7 @@ import Map, { Layer, NavigationControl, Source, type MapMouseEvent, type MapRef 
 import type { FeatureCollection, Point } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { BASEMAP_STYLE } from "../lib/basemap";
-import { bandColor, bandIndex, pointRadius } from "../lib/band-color";
+import { bandIndex, pointRadius } from "../lib/band-color";
 import { ensureMapWorker } from "../lib/maplibre-worker";
 import type { MapCommand } from "../lib/map-command";
 import type { ViewGroup } from "../lib/view";
@@ -54,21 +54,11 @@ export function AtlasMap({
           language: group.languageName ?? "",
           band: group.evangelicalBand ?? "",
           bandIndex: bandIndex(group.evangelicalBand),
-          color: bandColor(group.evangelicalBand),
           radius: pointRadius(group.population),
         },
       }];
     }),
   }), [groups]);
-
-  const counts = useMemo(() => {
-    const next: Record<string, number> = {};
-    for (const group of groups) {
-      if (group.unreached !== true) continue;
-      for (const state of group.usStates) next[state] = (next[state] ?? 0) + 1;
-    }
-    return next;
-  }, [groups]);
 
   useEffect(() => {
     const map = mapRef.current?.getMap();
@@ -94,21 +84,38 @@ export function AtlasMap({
     if (!map) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const duration = reduce ? 0 : 500;
+    const mobile = window.matchMedia("(max-width: 959px)").matches;
+    const padding = mobile
+      ? { top: 56, bottom: Math.round(window.innerHeight * 0.48), left: 36, right: 36 }
+      : { top: 72, bottom: 72, left: 48, right: 48 };
     if (command?.bounds) {
       const [west, south, east, north] = command.bounds;
-      map.fitBounds(
-        [[west, south], [east, north]],
-        { padding: 72, duration, easing: (t) => 1 - (1 - t) ** 3 },
-      );
+      map.fitBounds([[west, south], [east, north]], { padding, duration, easing: (t) => 1 - (1 - t) ** 3 });
       return;
     }
     const view = scope === "us" ? US_VIEW : WORLD_VIEW;
-    map.easeTo({ ...view, duration });
+    map.easeTo({ ...view, duration, padding });
   }, [command, scope]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const group = groups.find((item) => item.pgid === selectedPgid);
+    if (!map || !group || group.latitude === null || group.longitude === null) return;
+    if (command?.pgids.includes(group.pgid)) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const mobile = window.matchMedia("(max-width: 959px)").matches;
+    map.easeTo({
+      center: [group.longitude, group.latitude],
+      duration: reduce ? 0 : 400,
+      padding: mobile
+        ? { top: 56, bottom: Math.round(window.innerHeight * 0.48), left: 36, right: 36 }
+        : { top: 80, bottom: 80, left: 80, right: 80 },
+    });
+  }, [selectedPgid, groups, command]);
 
   function pick(event: MapMouseEvent): string | null {
     const features = event.features ?? [];
-    const cluster = features.find((feature) => feature.layer.id === "clusters");
+    const cluster = features.find((feature) => feature.layer.id === "clusters" || feature.layer.id === "cluster-count");
     if (cluster && mapRef.current) {
       const source = mapRef.current.getSource("groups");
       if (source && "getClusterExpansionZoom" in source) {
@@ -164,12 +171,15 @@ export function AtlasMap({
         mapStyle={BASEMAP_STYLE}
         initialViewState={scope === "us" ? US_VIEW : WORLD_VIEW}
         attributionControl={{ compact: true }}
-        interactiveLayerIds={["points", "clusters"]}
+        interactiveLayerIds={["points", "clusters", "cluster-count"]}
         cursor="pointer"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
         onClick={(event) => onSelect(pick(event))}
         onMouseMove={(event) => {
-          if (window.matchMedia("(pointer: coarse)").matches) return;
+          const pointer = "originalEvent" in event && event.originalEvent instanceof PointerEvent
+            ? event.originalEvent.pointerType
+            : "";
+          if (pointer === "touch" || window.matchMedia("(pointer: coarse)").matches) return;
           const pgid = pick(event);
           const group = groups.find((item) => item.pgid === pgid) ?? null;
           onHover(group ? { group, x: event.point.x, y: event.point.y } : null);
@@ -191,22 +201,10 @@ export function AtlasMap({
         </Source>
         <Source id="states" type="geojson" data="/api/geo/states">
           <Layer
-            id="state-fill"
-            type="fill"
-            maxzoom={8}
-            layout={{ visibility: scope === "us" ? "visible" : "none" }}
-            paint={{
-              "fill-color": (Object.keys(counts).length
-                ? ["match", ["get", "postal"], ...Object.entries(counts).flatMap(([code, count]) => [code, count >= 4 ? "#E9B99A" : "#F6E3D6"]), "#EDE4D3"]
-                : "#EDE4D3") as never,
-              "fill-opacity": 0.38,
-            }}
-          />
-          <Layer
             id="state-line"
             type="line"
             layout={{ visibility: scope === "us" ? "visible" : "none" }}
-            paint={{ "line-color": "#CFC4B2", "line-width": 0.6, "line-opacity": 0.7 }}
+            paint={{ "line-color": "#CFC4B2", "line-width": 0.6, "line-opacity": 0.65 }}
           />
         </Source>
         <Source
@@ -214,8 +212,9 @@ export function AtlasMap({
           type="geojson"
           data={collection}
           cluster
-          clusterMaxZoom={7}
-          clusterRadius={46}
+          clusterMaxZoom={5}
+          clusterRadius={42}
+          clusterMinPoints={2}
           clusterProperties={{ deepest: ["max", ["get", "bandIndex"]] }}
           promoteId="pgid"
         >
@@ -224,8 +223,8 @@ export function AtlasMap({
             type="circle"
             filter={["has", "point_count"]}
             paint={{
-              "circle-color": ["interpolate", ["linear"], ["get", "deepest"], 0, "#F6E3D6", 2, "#D58A60", 4, "#7E3418"],
-              "circle-radius": ["interpolate", ["linear"], ["get", "point_count"], 2, 16, 24, 28],
+              "circle-color": ["interpolate", ["linear"], ["get", "deepest"], 0, "#F6E3D6", 1, "#E9B99A", 2, "#D58A60", 3, "#B4532A", 4, "#7E3418"],
+              "circle-radius": ["interpolate", ["linear"], ["get", "point_count"], 2, 16, 12, 22, 36, 28],
               "circle-stroke-width": 1.5,
               "circle-stroke-color": "#FAF6EF",
             }}
@@ -236,12 +235,15 @@ export function AtlasMap({
             filter={["has", "point_count"]}
             layout={{
               "text-field": ["get", "point_count_abbreviated"],
-              "text-font": ["Noto Sans Regular"],
-              "text-size": 12,
+              "text-font": ["Noto Sans Bold", "Noto Sans Regular"],
+              "text-size": 13,
               "text-allow-overlap": true,
+              "text-ignore-placement": true,
             }}
             paint={{
               "text-color": ["case", [">=", ["get", "deepest"], 3], "#FAF6EF", "#1F1B16"],
+              "text-halo-color": ["case", [">=", ["get", "deepest"], 3], "#7E3418", "#FAF6EF"],
+              "text-halo-width": 1.1,
             }}
           />
           <Layer
@@ -250,11 +252,11 @@ export function AtlasMap({
             filter={["!", ["has", "point_count"]]}
             paint={{
               "circle-color": "#B4532A",
-              "circle-radius": ["+", ["get", "radius"], 7],
+              "circle-radius": ["+", ["get", "radius"], 8],
               "circle-opacity": [
                 "case",
-                ["boolean", ["feature-state", "bloom"], false], 0.28,
-                ["boolean", ["feature-state", "highlight"], false], 0.14,
+                ["boolean", ["feature-state", "bloom"], false], 0.35,
+                ["boolean", ["feature-state", "highlight"], false], 0.16,
                 0,
               ],
             }}
@@ -264,7 +266,7 @@ export function AtlasMap({
             type="circle"
             filter={["!", ["has", "point_count"]]}
             paint={{
-              "circle-color": ["get", "color"],
+              "circle-color": ["interpolate", ["linear"], ["get", "bandIndex"], 0, "#F6E3D6", 1, "#E9B99A", 2, "#D58A60", 3, "#B4532A", 4, "#7E3418"],
               "circle-radius": [
                 "case",
                 ["boolean", ["feature-state", "selected"], false],

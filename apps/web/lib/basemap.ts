@@ -15,23 +15,6 @@ export const BASEMAP_STYLE: StyleSpecification = {
   },
   layers: [
     { id: "background", type: "background", paint: { "background-color": "#DCE6EA" } },
-    // Land polygons are painted from self-hosted GeoJSON in AtlasMap so the
-    // map still reads if OpenFreeMap tiles are slow. These vector layers add
-    // water, borders, and labels when the tiles arrive.
-    {
-      id: "earth",
-      type: "fill",
-      source: "openmaptiles",
-      "source-layer": "landcover",
-      paint: { "fill-color": "#EDE4D3" },
-    },
-    {
-      id: "landuse",
-      type: "fill",
-      source: "openmaptiles",
-      "source-layer": "landuse",
-      paint: { "fill-color": "#EDE4D3" },
-    },
     {
       id: "water",
       type: "fill",
@@ -45,7 +28,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
       source: "openmaptiles",
       "source-layer": "boundary",
       filter: ["==", ["get", "admin_level"], 4],
-      minzoom: 3,
+      minzoom: 5,
       paint: {
         "line-color": "#CFC4B2",
         "line-width": 0.6,
@@ -68,8 +51,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
       type: "symbol",
       source: "openmaptiles",
       "source-layer": "place",
-      maxzoom: 5,
-      filter: ["==", ["get", "class"], "country"],
+      maxzoom: 4,
+      filter: ["all", ["==", ["get", "class"], "country"], ["<=", ["get", "rank"], 4]],
       layout: {
         "text-field": ["get", "name"],
         "text-font": ["Noto Sans Regular"],
@@ -87,7 +70,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
       type: "symbol",
       source: "openmaptiles",
       "source-layer": "place",
-      minzoom: 4,
+      minzoom: 5,
       filter: ["in", ["get", "class"], ["literal", ["state", "province"]]],
       layout: {
         "text-field": ["get", "name"],
@@ -105,8 +88,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
       type: "symbol",
       source: "openmaptiles",
       "source-layer": "place",
-      minzoom: 6,
-      filter: ["in", ["get", "class"], ["literal", ["city", "town"]]],
+      minzoom: 8,
+      filter: ["all", ["==", ["get", "class"], "city"], ["<=", ["get", "rank"], 6]],
       layout: {
         "text-field": ["get", "name"],
         "text-font": ["Noto Sans Regular"],

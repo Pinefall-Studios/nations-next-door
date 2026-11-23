@@ -14,12 +14,31 @@ if (existsSync(workerSrc)) {
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(here, "../.."),
+  outputFileTracingIncludes: {
+    "/api/**": [
+      "../../src/core/data/**/*",
+      "../../data/**/*",
+      "./data/**/*",
+    ],
+    "/*": [
+      "../../src/core/data/**/*",
+      "../../data/**/*",
+      "./data/**/*",
+    ],
+  },
   serverExternalPackages: ["maplibre-gl"],
   webpack: (config) => {
     config.resolve.extensionAlias = {
       ...(config.resolve.extensionAlias ?? {}),
       ".js": [".ts", ".tsx", ".js"],
     };
+    config.resolve.extensions = Array.from(
+      new Set([...(config.resolve.extensions ?? []), ".geojson"]),
+    );
+    config.module.rules.push({
+      test: /\.geojson$/,
+      type: "json",
+    });
     return config;
   },
 };

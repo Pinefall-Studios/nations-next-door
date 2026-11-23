@@ -6,9 +6,11 @@ import { Librarian } from "../../../components/Librarian";
 import { LocatorMap } from "../../../components/LocatorMap";
 import { PatternTile } from "../../../components/PatternTile";
 import { SampleBanner, SiteFooter, SiteHeader } from "../../../components/SiteChrome";
-import { getCatalog, getGroup } from "../../../lib/catalog";
+import { loadGroupPage } from "../../../lib/live-catalog";
 
 const kannada = Noto_Sans_Kannada({ subsets: ["kannada"], weight: ["500"] });
+
+export const dynamic = "force-dynamic";
 
 export default async function GroupPage({
   params,
@@ -19,9 +21,9 @@ export default async function GroupPage({
 }) {
   const { pgid } = await params;
   const query = await searchParams;
-  const group = getGroup(pgid);
-  if (!group) notFound();
-  const catalog = getCatalog();
+  const loaded = await loadGroupPage(pgid);
+  if (!loaded) notFound();
+  const { group, catalog } = loaded;
   const where = group.usStates.length > 0 ? group.usStates.join(", ") : group.country;
   const prayer = `Pray for the ${group.name} people${group.country ? ` of ${group.country}` : ""}, ${group.population?.toLocaleString("en-US") ?? "a people"} whose primary language is ${group.languageName ?? "not listed"}.`;
 
@@ -29,6 +31,11 @@ export default async function GroupPage({
     <>
       <SiteHeader />
       <SampleBanner label={catalog.sampleLabel} attribution={catalog.attribution} />
+      {catalog.mode === "live" ? (
+        <div className="banner">
+          <div className="shell"><strong>Live data.</strong> {catalog.attribution}</div>
+        </div>
+      ) : null}
       <main className="shell">
         <p style={{ marginTop: 24 }}><Link href="/groups">All groups</Link></p>
         <article className="detail-card" style={{ marginTop: 12 }}>
@@ -82,7 +89,7 @@ export default async function GroupPage({
                   <strong>
                     {row.href && row.linkText ? (
                       <a href={row.href} target="_blank" rel="noreferrer">{row.linkText}</a>
-                    ) : "Not in this sample"}
+                    ) : "Not listed"}
                   </strong>
                 </li>
               ))}

@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
-import nodePath from "node:path";
 import { geoAlbers, geoMercator, geoNaturalEarth1, geoPath, type GeoProjection } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry, Position } from "geojson";
 import type { GeometryCollection, Topology } from "topojson-specification";
+import usStates from "../../../data/us-states.geojson" with { type: "json" };
+import worldTopology from "../data/countries-110m.json" with { type: "json" };
 import type { MapShape } from "./view";
 
 const NUMERIC_TO_ISO: Record<string, string> = {
@@ -90,16 +90,16 @@ function union(bounds: Array<[number, number, number, number] | null>): [number,
   ];
 }
 
+export function loadUsStates(): FeatureCollection<Geometry, Props> {
+  return asCollection(usStates);
+}
+
 function loadUs(): FeatureCollection<Geometry, Props> {
-  return asCollection(JSON.parse(
-    readFileSync(nodePath.join(process.cwd(), "../../data/us-states.geojson"), "utf8"),
-  ));
+  return loadUsStates();
 }
 
 function loadWorld(): Shape[] {
-  const topology = JSON.parse(
-    readFileSync(nodePath.join(process.cwd(), "data/countries-110m.json"), "utf8"),
-  ) as Topology<{ countries: GeometryCollection<Props> }>;
+  const topology = worldTopology as unknown as Topology<{ countries: GeometryCollection<Props> }>;
   const collection = feature(
     topology,
     topology.objects.countries,

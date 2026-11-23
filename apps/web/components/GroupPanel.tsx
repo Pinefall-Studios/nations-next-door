@@ -7,9 +7,13 @@ import type { ViewGroup } from "../lib/view";
 export function GroupPanel({
   group,
   onAsk,
+  onClose,
+  onOpen,
 }: {
   group: ViewGroup;
   onAsk: () => void;
+  onClose?: () => void;
+  onOpen?: () => void;
 }) {
   const where = group.usStates.length > 0 ? `${group.country} · ${group.usStates.join(", ")}` : group.country;
   return (
@@ -27,7 +31,14 @@ export function GroupPanel({
         <div className="actions">
           <a className="btn" href={`/groups/${group.pgid}#pray`}>Pray</a>
           <button type="button" className="btn secondary" onClick={onAsk}>Ask</button>
-          <Link className="btn secondary" href={`/groups/${group.pgid}`}>Open page</Link>
+          {onOpen ? (
+            <button type="button" className="btn secondary" onClick={onOpen}>Open</button>
+          ) : (
+            <Link className="btn secondary" href={`/groups/${group.pgid}`}>Open page</Link>
+          )}
+          {onClose ? (
+            <button type="button" className="quiet-btn" onClick={onClose}>Back</button>
+          ) : null}
         </div>
       </div>
     </article>

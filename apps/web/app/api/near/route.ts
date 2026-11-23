@@ -10,6 +10,6 @@ export async function GET(request: Request) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     return Response.json({ state: null }, { status: 400 });
   }
-  const state = stateForPoint(lng, lat);
+  const state = stateForPoint(lat, lng);
   return Response.json({ state });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Catalog, ViewGroup } from "../lib/view";
 import type { MapCommand } from "../lib/map-command";
 import { commandFor } from "../lib/map-command";
@@ -15,6 +15,12 @@ import { SampleBanner, SiteFooter } from "./SiteChrome";
 const AtlasMap = dynamic(() => import("./AtlasMap").then((mod) => mod.AtlasMap), { ssr: false });
 
 type HoverInfo = { group: ViewGroup; x: number; y: number };
+
+function tooltipPosition(info: HoverInfo): { left: number; top: number } {
+  const left = Math.max(220, Math.min(info.x + 12, typeof window === "undefined" ? info.x : window.innerWidth - 220));
+  const top = info.y < 72 ? info.y + 18 : Math.max(12, info.y - 12);
+  return { left, top };
+}
 
 export function Explore({ initial }: { initial: Catalog }) {
   const [catalog, setCatalog] = useState(initial);
@@ -30,6 +36,7 @@ export function Explore({ initial }: { initial: Catalog }) {
   const [sheet, setSheet] = useState<"peek" | "half" | "full">("peek");
   const [ask, setAsk] = useState(false);
   const [demo, setDemo] = useState(true);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     fetch("/api/chat").then((res) => res.json()).then((body) => setDemo(Boolean(body.demo))).catch(() => setDemo(true));
@@ -76,6 +83,12 @@ export function Explore({ initial }: { initial: Catalog }) {
     : (scope === "us" ? "the United States" : "this view");
   const resultLine = `${listed.length} group${listed.length === 1 ? "" : "s"} in ${placeLabel}`;
 
+  useEffect(() => {
+    if (!selected || ask) return;
+    const row = listRef.current?.querySelector(`[data-pgid="${selected}"]`);
+    row?.scrollIntoView({ block: "nearest" });
+  }, [selected, sheet, ask]);
+
   const focus = useCallback((next: MapCommand) => {
     setHistory((current) => (command ? [...current, command] : current));
     setCommand(next);
@@ -95,8 +108,17 @@ export function Explore({ initial }: { initial: Catalog }) {
   }
 
   function select(pgid: string | null) {
+    if (!pgid) {
+      setSelected(null);
+      return;
+    }
+    const mobile = window.matchMedia("(max-width: 959px)").matches;
+    if (mobile && pgid === selected && sheet !== "full") {
+      setSheet("full");
+      return;
+    }
     setSelected(pgid);
-    if (pgid) setSheet("half");
+    if (mobile) setSheet((current) => (current === "full" ? "full" : "half"));
   }
 
   async function nearMe() {
@@ -114,6 +136,8 @@ export function Explore({ initial }: { initial: Catalog }) {
     });
   }
 
+  const tip = hoverShown ? tooltipPosition(hoverShown) : null;
+
   return (
     <div className={ask ? "explore is-ask" : "explore"}>
       <SampleBanner
@@ -121,7 +145,7 @@ export function Explore({ initial }: { initial: Catalog }) {
         attribution={catalog.attribution}
       />
       {catalog.mode === "live" ? (
-        <div className="banner">
+        <div className="banner is-slim">
           <div className="shell">{catalog.attribution}</div>
         </div>
       ) : null}
@@ -151,11 +175,8 @@ export function Explore({ initial }: { initial: Catalog }) {
               setCommand(null);
             }}
           />
-          {hoverShown ? (
-            <div
-              className="map-tooltip"
-              style={{ left: hoverShown.x + 8, top: hoverShown.y + 8 }}
-            >
+          {hoverShown && tip ? (
+            <div className="map-tooltip" style={{ left: tip.left, top: tip.top }}>
               <strong>{hoverShown.group.name}</strong>
               {hoverShown.group.nativeName ? <p className="native">{hoverShown.group.nativeName}</p> : null}
               <p>{hoverShown.group.population?.toLocaleString("en-US")} · {hoverShown.group.languageName}</p>
@@ -171,12 +192,28 @@ export function Explore({ initial }: { initial: Catalog }) {
               {command.label} · Back to previous view
             </button>
           ) : null}
+          {selectedGroup && !ask ? (
+            <aside className="group-dock" aria-label={`${selectedGroup.name} detail`}>
+              <div className="group-dock-head">
+                <p className="gold">People group</p>
+                <button type="button" className="quiet-btn" onClick={() => setSelected(null)}>Close</button>
+              </div>
+              <GroupPanel
+                group={selectedGroup}
+                onAsk={() => setAsk(true)}
+              />
+            </aside>
+          ) : null}
         </div>
         <div className={`sheet is-${ask ? "full" : sheet}`}>
           <button type="button" className="grab" aria-label="Resize list" onClick={() => setSheet((current) => current === "peek" ? "half" : current === "half" ? "full" : "peek")} />
           <div className="sheet-head">
             <p className="nums">{resultLine}</p>
-            <button type="button" className="btn secondary" onClick={() => setAsk((value) => !value)}>Ask</button>
+            {ask ? (
+              <button type="button" className="btn secondary" onClick={() => setAsk(false)}>Close</button>
+            ) : (
+              <button type="button" className="btn secondary" onClick={() => setAsk(true)}>Ask</button>
+            )}
           </div>
           {ask ? (
             <LibrarianPanel
@@ -184,35 +221,41 @@ export function Explore({ initial }: { initial: Catalog }) {
               attribution={catalog.attribution}
               demo={demo}
               onFocus={focus}
+              onClose={() => setAsk(false)}
               onOpenGroup={(pgid) => { setAsk(false); select(pgid); setSheet("full"); }}
             />
           ) : selectedGroup && sheet === "full" ? (
-            <GroupPanel group={selectedGroup} onAsk={() => setAsk(true)} />
+            <GroupPanel
+              group={selectedGroup}
+              onAsk={() => setAsk(true)}
+              onClose={() => setSheet("half")}
+            />
           ) : (
-            <ul className="sheet-list">
+            <ul className="sheet-list" ref={listRef}>
               {listed.map((group) => (
-                <li key={group.pgid}>
+                <li key={group.pgid} data-pgid={group.pgid}>
                   <button
                     type="button"
                     className={group.pgid === selected ? "sheet-row is-on" : "sheet-row"}
                     aria-pressed={group.pgid === selected}
                     aria-label={`${group.name}. ${group.population?.toLocaleString("en-US") ?? "Population not listed"} · ${group.languageName ?? "language not listed"}. Evangelical band ${group.evangelicalBand ?? "not stated"}.`}
                     onClick={() => select(group.pgid)}
-                    onMouseEnter={() => setHover({ group, x: 24, y: 24 })}
+                    onMouseEnter={() => {
+                      if (window.matchMedia("(pointer: coarse)").matches) return;
+                      setHover({ group, x: 240, y: 88 });
+                    }}
                     onMouseLeave={() => setHover(null)}
                   >
                     <strong>{group.name}</strong>
                     <span>{group.country}{group.usStates.length ? ` · ${group.usStates.join(", ")}` : ""} · {group.population?.toLocaleString("en-US")}</span>
                   </button>
+                  {group.pgid === selected ? (
+                    <button type="button" className="row-open" onClick={() => setSheet("full")}>Open</button>
+                  ) : null}
                 </li>
               ))}
             </ul>
           )}
-          {selectedGroup && sheet === "full" && !ask ? null : selectedGroup && !ask ? (
-            <div className="sheet-peek-card">
-              <GroupPanel group={selectedGroup} onAsk={() => setAsk(true)} />
-            </div>
-          ) : null}
         </div>
       </div>
       <SiteFooter attribution={catalog.attribution} />

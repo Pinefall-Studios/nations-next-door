@@ -20,17 +20,21 @@ export function LibrarianPanel({
   attribution,
   demo,
   onFocus,
+  onClose,
   onOpenGroup,
 }: {
   groups: ViewGroup[];
   attribution: string;
   demo: boolean;
   onFocus: (command: MapCommand) => void;
+  onClose: () => void;
   onOpenGroup: (pgid: string) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [thread, setThread] = useState<ThreadItem[]>([]);
+  const [lookingDemo, setLookingDemo] = useState(false);
   const lastMap = useRef<string>("");
+  const latest = useRef<HTMLElement | null>(null);
 
   const live = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
@@ -78,7 +82,11 @@ export function LibrarianPanel({
   }, [live.messages, onFocus]);
 
   const items = demo ? thread : liveText;
-  const looking = !demo && (live.status === "submitted" || live.status === "streaming");
+  const looking = lookingDemo || (!demo && (live.status === "submitted" || live.status === "streaming"));
+
+  useEffect(() => {
+    latest.current?.scrollIntoView({ block: "start" });
+  }, [items, looking]);
 
   function ask(text: string) {
     const question = text.trim();
@@ -86,12 +94,16 @@ export function LibrarianPanel({
     setDraft("");
     if (demo) {
       const reply = demoAnswer(question, groups, attribution);
-      setThread((current) => [
-        ...current,
-        { role: "ask", text: question, groups: [] },
-        { role: "answer", text: reply.text, groups: reply.groups, source: attribution },
-      ]);
+      setLookingDemo(true);
       if (reply.map) onFocus(reply.map);
+      window.setTimeout(() => {
+        setThread((current) => [
+          ...current,
+          { role: "ask", text: question, groups: [] },
+          { role: "answer", text: reply.text, groups: reply.groups, source: attribution },
+        ]);
+        setLookingDemo(false);
+      }, 280);
       return;
     }
     live.sendMessage({ text: question });
@@ -108,6 +120,7 @@ export function LibrarianPanel({
           <h2>Ask the librarian</h2>
           <p className="demo-note">{demo ? "Demo mode. Answers are written from this set, not a live model." : "Live model."}</p>
         </div>
+        <button type="button" className="btn secondary" onClick={onClose}>Close</button>
       </header>
       <div className="thread">
         {items.length === 0 ? (
@@ -118,7 +131,11 @@ export function LibrarianPanel({
           </div>
         ) : null}
         {items.map((entry, index) => (
-          <article key={`${entry.role}-${index}`} className={entry.role === "ask" ? "bubble ask" : "bubble"}>
+          <article
+            key={`${entry.role}-${index}`}
+            className={entry.role === "ask" ? "bubble ask" : "bubble"}
+            ref={index === items.length - 1 && entry.role === "answer" ? (node) => { latest.current = node; } : undefined}
+          >
             {entry.role === "answer" ? <p>{entry.text.split("\n")[0]}</p> : entry.text}
             {entry.groups.map((group) => (
               <button key={group.pgid} type="button" className="mini-card" onClick={() => onOpenGroup(group.pgid)}>
@@ -129,7 +146,9 @@ export function LibrarianPanel({
             {entry.role === "answer" ? <p className="source-line">Source: {entry.source ?? attribution}</p> : null}
           </article>
         ))}
-        {looking ? <p className="demo-note">Looking…</p> : null}
+        {looking ? (
+          <p className="demo-note looking" ref={(node) => { latest.current = node; }}>Looking…</p>
+        ) : null}
       </div>
       <form
         onSubmit={(event) => {

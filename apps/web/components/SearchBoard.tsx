@@ -5,8 +5,6 @@ import { shortBand } from "../lib/band";
 import { GroupList } from "./GroupList";
 import type { ViewGroup } from "../lib/view";
 
-const STATES = ["", "TX", "LA", "MS"];
-
 const PLACE: Record<string, { country?: string; state?: string }> = {
   Texas: { state: "TX" },
   Louisiana: { state: "LA" },
@@ -29,6 +27,7 @@ export function SearchBoard({ groups, place = "" }: { groups: ViewGroup[]; place
   const religions = [...new Set(groups.map((group) => group.religion).filter(Boolean))] as string[];
   const bands = [...new Set(groups.map((group) => group.evangelicalBand).filter(Boolean))] as string[];
   const countries = [...new Set(groups.map((group) => group.country).filter(Boolean))] as string[];
+  const states = [...new Set(groups.flatMap((group) => group.usStates))].sort();
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -65,7 +64,8 @@ export function SearchBoard({ groups, place = "" }: { groups: ViewGroup[]; place
         <label>
           <span>US state</span>
           <select value={state} onChange={(event) => setState(event.target.value)}>
-            {STATES.map((item) => <option key={item || "any"} value={item}>{item || "Any"}</option>)}
+            <option value="">Any</option>
+            {states.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </label>
         <label>

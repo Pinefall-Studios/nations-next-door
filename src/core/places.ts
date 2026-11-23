@@ -1,5 +1,5 @@
+import iso3166 from "./data/iso3166.json" with { type: "json" };
 import { UnknownPlaceError, InvalidQueryError } from "./errors.js";
-import { readNearbyFile } from "./read-data.js";
 import { fold, hasUnsafeQueryCharacters } from "./text.js";
 
 interface CountryCode {
@@ -8,12 +8,7 @@ interface CountryCode {
   alpha3: string;
 }
 
-const countries = JSON.parse(
-  readNearbyFile(import.meta.url, "./data/iso3166.json", [
-    "src/core/data/iso3166.json",
-    "../../src/core/data/iso3166.json",
-  ]),
-) as CountryCode[];
+const countries = iso3166 as CountryCode[];
 
 /**
  * Common names that are not the ISO short name, or that IMB spells differently

@@ -1,4 +1,4 @@
-import { readNearbyFile } from "./read-data.js";
+import usStates from "../../data/us-states.geojson" with { type: "json" };
 
 interface PreparedState {
   code: string;
@@ -39,12 +39,7 @@ function asPolygons(type: string, coordinates: unknown): number[][][][] {
 
 function loadStates(): PreparedState[] {
   if (prepared) return prepared;
-  const collection = JSON.parse(
-    readNearbyFile(import.meta.url, "../../data/us-states.geojson", [
-      "data/us-states.geojson",
-      "../../data/us-states.geojson",
-    ]),
-  ) as {
+  const collection = usStates as {
     features?: Array<{
       properties?: { postal?: string };
       geometry?: { type?: string; coordinates?: unknown };

@@ -106,7 +106,7 @@ export function FilterBar({
         >
           Scripture available
         </button>
-        <label className={filters.place ? "chip-filter is-on" : "chip-filter"}>
+        <label className={filters.place ? "chip-filter is-on place" : "chip-filter place"}>
           Place
           <select value={filters.place} onChange={(event) => onChange({ ...filters, place: event.target.value })}>
             <option value="">Anywhere</option>
