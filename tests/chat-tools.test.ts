@@ -103,10 +103,10 @@ describe("chat tools", () => {
     expect(bounds).not.toBeNull();
     if (!bounds) return;
     const [west, south, east, north] = bounds;
-    expect(west).toBeLessThan(-103);
-    expect(south).toBeLessThan(27);
-    expect(east).toBeGreaterThan(-94);
-    expect(north).toBeGreaterThan(35);
+    expect(west).toBeLessThanOrEqual(-106.65);
+    expect(south).toBeLessThanOrEqual(25.84);
+    expect(east).toBeGreaterThanOrEqual(-93.51);
+    expect(north).toBeGreaterThanOrEqual(36.5);
   });
 
   it("refuses a payload that still contains a banned field", () => {

@@ -101,8 +101,25 @@ export function assertChatPayloadIsPublic(payload: unknown): void {
   }
 }
 
+function lngLatBounds(
+  west: number,
+  south: number,
+  east: number,
+  north: number,
+): [number, number, number, number] {
+  if ((south < -90 || north > 90 || south > 90 || north < -90) && Math.abs(west) <= 90 && Math.abs(east) <= 90) {
+    [west, south, east, north] = [south, west, north, east];
+  }
+  return [
+    Math.min(west, east),
+    Math.min(south, north),
+    Math.max(west, east),
+    Math.max(south, north),
+  ];
+}
+
 function padBounds(bounds: [number, number, number, number]): [number, number, number, number] {
-  const [west, south, east, north] = bounds;
+  const [west, south, east, north] = lngLatBounds(...bounds);
   const padLng = Math.max((east - west) * 0.15, 0.4);
   const padLat = Math.max((north - south) * 0.15, 0.4);
   return [west - padLng, south - padLat, east + padLng, north + padLat];
@@ -130,14 +147,15 @@ function boundsOf(
       group.latitude !== null && group.longitude !== null,
   );
   const pointBox: [number, number, number, number] | null = points.length
-    ? [
+    ? lngLatBounds(
         Math.min(...points.map((group) => group.longitude)),
         Math.min(...points.map((group) => group.latitude)),
         Math.max(...points.map((group) => group.longitude)),
         Math.max(...points.map((group) => group.latitude)),
-      ]
+      )
     : null;
-  const stateBox = stateCode ? bboxForState(stateCode) : null;
+  const rawState = stateCode ? bboxForState(stateCode) : null;
+  const stateBox = rawState ? lngLatBounds(...rawState) : null;
   const combined = unionBounds([stateBox, pointBox]);
   return combined ? padBounds(combined) : null;
 }

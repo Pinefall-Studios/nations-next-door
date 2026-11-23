@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { resolveCountry } from "../src/core/places.js";
-import { stateForPoint } from "../src/core/state-geometry.js";
+import { bboxForState, stateForPoint } from "../src/core/state-geometry.js";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 
@@ -37,5 +37,13 @@ describe("bundled geographic data", () => {
     expect(resolveCountry("USA")).toBe("USA");
     expect(resolveCountry("Benin")).toBe("BEN");
     expect(stateForPoint(29.76, -95.36)).toBe("TX");
+    const texas = bboxForState("TX");
+    expect(texas).not.toBeNull();
+    if (!texas) return;
+    const [west, south, east, north] = texas;
+    expect(west).toBeLessThan(-106.5);
+    expect(south).toBeLessThan(26);
+    expect(east).toBeGreaterThan(-94);
+    expect(north).toBeGreaterThan(36);
   });
 });

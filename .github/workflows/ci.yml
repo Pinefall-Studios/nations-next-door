@@ -46,3 +46,8 @@ jobs:
           code=$(curl -sS -o /tmp/groups-smoke.json -w '%{http_code}' --max-time 40 'http://127.0.0.1:3456/api/groups?country=USA&unreached=no')
           test "$code" = "200"
           python3 -c "import json; d=json.load(open('/tmp/groups-smoke.json')); assert d.get('groups'), d; assert d.get('mode') in ('live','sample'), d"
+      - name: Playwright Texas map
+        working-directory: apps/web
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test

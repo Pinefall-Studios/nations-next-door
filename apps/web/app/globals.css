@@ -304,6 +304,14 @@ main.shell { padding-bottom: 40px; }
 .chip-filter.is-on { background: #f6e3d6; border-color: transparent; }
 .chip-filter select { border: 0; background: transparent; min-height: 0; padding: 0; max-width: 14rem; }
 .chip-filter.place select { min-width: 12rem; max-width: 18rem; }
+@media (min-width: 960px) {
+  .chip-row {
+    flex-wrap: wrap;
+    overflow: visible;
+    scroll-snap-type: none;
+    touch-action: auto;
+  }
+}
 .filter-meta { display: flex; gap: 12px; align-items: center; color: var(--ink); font-size: 14px; padding-bottom: 6px; }
 .filter-meta p { margin: 0; color: var(--ink); font-size: 14px; }
 .quiet-btn { background: none; border: 0; color: var(--secondary); padding: 0; }

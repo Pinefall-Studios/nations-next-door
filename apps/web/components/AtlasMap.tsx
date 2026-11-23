@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useRef, type KeyboardEvent } from "react";
+import type { Map as MapLibreMap } from "maplibre-gl";
 import Map, { Layer, NavigationControl, Source, type MapMouseEvent, type MapRef } from "react-map-gl/maplibre";
 import type { FeatureCollection, Point } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { BASEMAP_STYLE } from "../lib/basemap";
 import { bandIndex, pointRadius } from "../lib/band-color";
+import {
+  clampCameraPadding,
+  exposeAtlasMap,
+  fitMapToBounds,
+  isTestMode,
+  mapHasSize,
+  type CameraPadding,
+} from "../lib/camera";
 import { ensureMapWorker } from "../lib/maplibre-worker";
 import type { MapCommand } from "../lib/map-command";
 import type { ViewGroup } from "../lib/view";
@@ -17,23 +26,27 @@ type HoverInfo = { group: ViewGroup; x: number; y: number };
 const US_VIEW = { longitude: -96.8, latitude: 37.8, zoom: 3.5 };
 const WORLD_VIEW = { longitude: 8, latitude: 18, zoom: 1.6 };
 
-function cameraPadding(map: MapRef, insetBottom: number, kind: "fit" | "point" | "scope") {
+function nativeMap(ref: MapRef | null): MapLibreMap | null {
+  return ref?.getMap() ?? null;
+}
+
+function cameraPadding(map: MapLibreMap, insetBottom: number, kind: "fit" | "point" | "scope"): CameraPadding {
   const mobile = window.matchMedia("(max-width: 959px)").matches;
-  const canvas = map.getMap().getContainer();
+  const canvas = map.getContainer();
   const width = canvas.clientWidth || window.innerWidth;
   const height = canvas.clientHeight || window.innerHeight;
   if (mobile) {
-    const bottom = insetBottom > 0 ? Math.round(insetBottom) : Math.round(height * 0.58);
-    return { top: 72, bottom, left: 16, right: 16 };
+    const top = 72;
+    const requested = insetBottom > 0 ? Math.round(insetBottom) : Math.round(height * 0.58);
+    const bottom = Math.min(requested, Math.max(0, height - top - 120));
+    return clampCameraPadding(width, height, { top, bottom, left: 16, right: 16 });
   }
   if (kind === "fit") {
-    const dock = 372;
-    const usable = Math.max(width - dock, 240);
-    const padX = Math.round(usable * 0.15);
+    const padX = Math.round(width * 0.15);
     const padY = Math.round(height * 0.15);
-    return { top: padY, bottom: padY, left: padX, right: dock + padX };
+    return clampCameraPadding(width, height, { top: padY, bottom: padY, left: padX, right: padX });
   }
-  return { top: 72, bottom: 72, left: 48, right: 80 };
+  return clampCameraPadding(width, height, { top: 72, bottom: 72, left: 48, right: 80 });
 }
 
 export function AtlasMap({
@@ -60,6 +73,8 @@ export function AtlasMap({
   onScope: (scope: "us" | "world") => void;
 }) {
   const mapRef = useRef<MapRef>(null);
+  const commandRef = useRef(command);
+  const insetRef = useRef(insetBottom);
   const collection = useMemo<FeatureCollection<Point>>(() => ({
     type: "FeatureCollection",
     features: groups.flatMap((group) => {
@@ -101,30 +116,60 @@ export function AtlasMap({
   }, [groups, selectedPgid, highlightedPgids, bloom]);
 
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
+    commandRef.current = command;
+    insetRef.current = insetBottom;
+  }, [command, insetBottom]);
+
+  useEffect(() => {
+    let cancelled = false;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const duration = reduce ? 0 : 500;
-    const padding = cameraPadding(map, insetBottom, command?.bounds ? "fit" : "scope");
-    if (command?.bounds) {
-      const [west, south, east, north] = command.bounds;
-      map.getMap().resize();
-      map.fitBounds([[west, south], [east, north]], { padding, duration, easing: (t) => 1 - (1 - t) ** 3 });
-      return;
+    const duration = reduce || isTestMode() ? 0 : 500;
+
+    function apply(map: MapLibreMap): boolean {
+      exposeAtlasMap(map);
+      map.resize();
+      if (!mapHasSize(map)) return false;
+      const padding = cameraPadding(map, insetBottom, command?.bounds ? "fit" : "scope");
+      if (command?.bounds) {
+        return fitMapToBounds(map, command.bounds, padding, duration);
+      }
+      const view = scope === "us" ? US_VIEW : WORLD_VIEW;
+      map.stop();
+      map.easeTo({ ...view, duration, padding });
+      return true;
     }
-    const view = scope === "us" ? US_VIEW : WORLD_VIEW;
-    map.easeTo({ ...view, duration, padding });
+
+    function attempt(): boolean {
+      if (cancelled) return true;
+      const map = nativeMap(mapRef.current);
+      if (!map) return false;
+      return apply(map);
+    }
+
+    if (attempt()) return () => { cancelled = true; };
+
+    const timer = window.setInterval(() => {
+      if (attempt()) window.clearInterval(timer);
+    }, 80);
+    const stop = window.setTimeout(() => window.clearInterval(timer), 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.clearTimeout(stop);
+    };
   }, [command, scope, insetBottom]);
 
   useEffect(() => {
-    const map = mapRef.current;
+    if (command?.bounds) return;
+    const map = nativeMap(mapRef.current);
     const group = groups.find((item) => item.pgid === selectedPgid);
     if (!map || !group || group.latitude === null || group.longitude === null) return;
     if (command?.pgids.includes(group.pgid)) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    map.stop();
     map.easeTo({
       center: [group.longitude, group.latitude],
-      duration: reduce ? 0 : 400,
+      duration: reduce || isTestMode() ? 0 : 400,
       padding: cameraPadding(map, insetBottom, "point"),
     });
   }, [selectedPgid, groups, command, insetBottom]);
@@ -196,6 +241,20 @@ export function AtlasMap({
         interactiveLayerIds={["points", "clusters", "cluster-count"]}
         cursor="pointer"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+        onLoad={() => {
+          const map = nativeMap(mapRef.current);
+          if (!map) return;
+          exposeAtlasMap(map);
+          map.resize();
+          if (!commandRef.current?.bounds) return;
+          const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          fitMapToBounds(
+            map,
+            commandRef.current.bounds,
+            cameraPadding(map, insetRef.current, "fit"),
+            reduce || isTestMode() ? 0 : 500,
+          );
+        }}
         onClick={(event) => onSelect(pick(event))}
         onMouseMove={(event) => {
           const pointer = "originalEvent" in event && event.originalEvent instanceof PointerEvent

@@ -86,9 +86,12 @@ export function Explore({ initial }: { initial: Catalog }) {
   const placeLabel = filters.place
     ? (US_STATES.find(([code]) => code === filters.place)?.[1] ?? filters.place)
     : (scope === "us" ? "the United States" : "this view");
-  const resultLine = `${listed.length} group${listed.length === 1 ? "" : "s"} in ${placeLabel}`;
-  const peekLine = listed[0]
-    ? `${listed.length} group${listed.length === 1 ? "" : "s"} · ${listed[0].name}`
+  const countLine = `${listed.length} group${listed.length === 1 ? "" : "s"}`;
+  const resultLine = scope === "world" && !filters.place
+    ? countLine
+    : `${countLine} in ${placeLabel}`;
+  const peekLine = scope === "us" && listed[0]
+    ? `${countLine} · ${listed[0].name}`
     : resultLine;
 
   useEffect(() => {

@@ -80,7 +80,7 @@ export function FilterBar({
             value={filters.sort}
             onChange={(event) => onChange({ ...filters, sort: event.target.value === "largest" ? "largest" : "reach" })}
           >
-            <option value="reach">Least reached first</option>
+            <option value="reach">Least reached</option>
             <option value="largest">Largest</option>
           </select>
         </label>
