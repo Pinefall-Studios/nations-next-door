@@ -274,8 +274,21 @@ main.shell { padding-bottom: 40px; }
 }
 .explore > * { min-width: 0; }
 .filter-bar { padding: 8px 16px 0; }
+.filter-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.filter-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
 .chip-row {
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: nowrap;
   gap: 8px;
   overflow-x: auto;
@@ -285,8 +298,9 @@ main.shell { padding-bottom: 40px; }
   scrollbar-width: thin;
   padding-bottom: 6px;
   min-width: 0;
-  width: 100%;
   touch-action: pan-x;
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
 }
 .chip-filter {
   flex: 0 0 auto;
@@ -331,10 +345,7 @@ main.shell { padding-bottom: 40px; }
 }
 @media (min-width: 960px) {
   .chip-row {
-    flex-wrap: nowrap;
-    overflow: visible;
     scroll-snap-type: none;
-    touch-action: auto;
   }
 }
 .filter-meta { display: flex; gap: 12px; align-items: center; color: var(--ink); font-size: 14px; padding-bottom: 6px; }
@@ -562,7 +573,7 @@ main.shell { padding-bottom: 40px; }
   .banner.is-slim .shell { font-size: 12px; }
   .filter-bar { padding: 6px 12px 0; }
   .filter-meta { display: none; }
-  .chip-row { margin: 0 -12px; padding: 0 12px 6px; }
+  .chip-row { margin: 0; padding: 0 0 6px; }
   .sheet.is-peek { height: 72px; }
   .sheet.is-peek .grab { margin: 6px auto 2px; }
   .sheet.is-full { height: min(86dvh, 100%); overflow: hidden; }

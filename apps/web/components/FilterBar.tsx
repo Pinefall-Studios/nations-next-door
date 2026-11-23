@@ -37,59 +37,63 @@ export function FilterBar({
 
   return (
     <div className="filter-bar">
-      <div className="chip-row">
-        <button
-          type="button"
-          className={filters.unreachedOnly ? "chip-filter is-on" : "chip-filter"}
-          onClick={() => onChange({ ...filters, unreachedOnly: !filters.unreachedOnly })}
-        >
-          Unreached only
-        </button>
-        <label className={filters.language ? "chip-filter is-on" : "chip-filter"}>
-          Language
-          <select value={filters.language} onChange={(event) => onChange({ ...filters, language: event.target.value })}>
-            <option value="">Any</option>
-            {languages.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
-          </select>
-        </label>
-        <label className={filters.religion ? "chip-filter is-on" : "chip-filter"}>
-          Religion
-          <select value={filters.religion} onChange={(event) => onChange({ ...filters, religion: event.target.value })}>
-            <option value="">Any</option>
-            {religions.map((name) => <option key={name} value={name}>{name}</option>)}
-          </select>
-        </label>
-        <button
-          type="button"
-          className={filters.scripture ? "chip-filter is-on" : "chip-filter"}
-          onClick={() => onChange({ ...filters, scripture: !filters.scripture })}
-        >
-          Scripture available
-        </button>
-        <label className={filters.place ? "chip-filter is-on place" : "chip-filter place"}>
-          Place
-          <select value={filters.place} onChange={(event) => onChange({ ...filters, place: event.target.value })}>
-            <option value="">Anywhere</option>
-            {US_STATES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
-            {countries.map((name) => <option key={name} value={name}>{name}</option>)}
-          </select>
-        </label>
-        <button type="button" className="chip-filter more" onClick={onMore}>More filters</button>
-        <label className="chip-filter sort-compact">
-          <span className="sr-only">Sort</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <path d="M4 7h10M4 12h7M4 17h4" />
-            <path d="M16 7v10M16 17l3-3M16 17l-3-3" />
-          </svg>
-          <select
-            aria-label="Sort"
-            value={filters.sort}
-            onChange={(event) => onChange({ ...filters, sort: event.target.value === "largest" ? "largest" : "reach" })}
+      <div className="filter-toolbar">
+        <div className="chip-row">
+          <button
+            type="button"
+            className={filters.unreachedOnly ? "chip-filter is-on" : "chip-filter"}
+            onClick={() => onChange({ ...filters, unreachedOnly: !filters.unreachedOnly })}
           >
-            <option value="reach">Least reached</option>
-            <option value="largest">Largest</option>
-          </select>
-        </label>
+            Unreached only
+          </button>
+          <label className={filters.language ? "chip-filter is-on" : "chip-filter"}>
+            Language
+            <select value={filters.language} onChange={(event) => onChange({ ...filters, language: event.target.value })}>
+              <option value="">Any</option>
+              {languages.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+            </select>
+          </label>
+          <label className={filters.religion ? "chip-filter is-on" : "chip-filter"}>
+            Religion
+            <select value={filters.religion} onChange={(event) => onChange({ ...filters, religion: event.target.value })}>
+              <option value="">Any</option>
+              {religions.map((name) => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </label>
+          <button
+            type="button"
+            className={filters.scripture ? "chip-filter is-on" : "chip-filter"}
+            onClick={() => onChange({ ...filters, scripture: !filters.scripture })}
+          >
+            Scripture available
+          </button>
+          <label className={filters.place ? "chip-filter is-on place" : "chip-filter place"}>
+            Place
+            <select value={filters.place} onChange={(event) => onChange({ ...filters, place: event.target.value })}>
+              <option value="">Anywhere</option>
+              {US_STATES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+              {countries.map((name) => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </label>
+        </div>
+        <div className="filter-actions">
+          <button type="button" className="chip-filter more" onClick={onMore}>More filters</button>
+          <label className="chip-filter sort-compact">
+            <span className="sr-only">Sort</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path d="M4 7h10M4 12h7M4 17h4" />
+              <path d="M16 7v10M16 17l3-3M16 17l-3-3" />
+            </svg>
+            <select
+              aria-label="Sort"
+              value={filters.sort}
+              onChange={(event) => onChange({ ...filters, sort: event.target.value === "largest" ? "largest" : "reach" })}
+            >
+              <option value="reach">Least reached</option>
+              <option value="largest">Largest</option>
+            </select>
+          </label>
+        </div>
       </div>
       <div className="filter-meta">
         <p className="nums">{resultLine}</p>

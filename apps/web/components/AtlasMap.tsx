@@ -30,13 +30,21 @@ function nativeMap(ref: MapRef | null): MapLibreMap | null {
   return ref?.getMap() ?? null;
 }
 
-function toggleTopPadding(map: MapLibreMap): number {
-  const atlas = map.getContainer().closest(".atlas");
-  const toggle = atlas?.querySelector(".atlas-toggle");
-  if (!(toggle instanceof HTMLElement)) return 96;
+function chromeTopPadding(map: MapLibreMap, reserveUndo: boolean): number {
+  const wrap = map.getContainer().closest(".atlas-wrap") ?? map.getContainer().closest(".atlas");
   const mapRect = map.getContainer().getBoundingClientRect();
-  const toggleRect = toggle.getBoundingClientRect();
-  return Math.max(72, Math.ceil(toggleRect.bottom - mapRect.top) + 16);
+  let bottom = 0;
+  const toggle = wrap?.querySelector(".atlas-toggle");
+  if (toggle instanceof HTMLElement) {
+    bottom = Math.max(bottom, toggle.getBoundingClientRect().bottom - mapRect.top);
+  }
+  const chip = wrap?.querySelector(".undo-chip");
+  if (chip instanceof HTMLElement) {
+    bottom = Math.max(bottom, chip.getBoundingClientRect().bottom - mapRect.top);
+  } else if (reserveUndo) {
+    bottom += 48;
+  }
+  return Math.max(72, Math.ceil(bottom) + 16);
 }
 
 function cameraPadding(map: MapLibreMap, insetBottom: number, kind: "fit" | "point" | "scope"): CameraPadding {
@@ -45,8 +53,8 @@ function cameraPadding(map: MapLibreMap, insetBottom: number, kind: "fit" | "poi
   const width = canvas.clientWidth || window.innerWidth;
   const height = canvas.clientHeight || window.innerHeight;
   if (mobile) {
-    const top = toggleTopPadding(map);
-    const requested = insetBottom > 0 ? Math.round(insetBottom) : Math.round(height * 0.58);
+    const top = chromeTopPadding(map, kind === "fit");
+    const requested = (insetBottom > 0 ? Math.round(insetBottom) : Math.round(height * 0.58)) + 12;
     const bottom = Math.min(requested, Math.max(0, height - top - 120));
     return clampCameraPadding(width, height, { top, bottom, left: 16, right: 16 }, 0.18);
   }
