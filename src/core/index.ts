@@ -8,7 +8,7 @@ export {
   UnknownPlaceError,
 } from "./errors.js";
 export { resolveCountry } from "./places.js";
-export { evangelicalBandDepth, toPublicPeopleGroup, unreachedFromBand } from "./project.js";
+export { evangelicalBandDepth, evangelicalFloorPercent, toPublicPeopleGroup, unreachedFromBand } from "./project.js";
 export { createPeopleGroupsService, normalizeLanguage, normalizePgid } from "./service.js";
 export type { PeopleGroupsOptions, PeopleGroupsService } from "./service.js";
 export {
@@ -22,7 +22,7 @@ export {
   toChatGroup,
 } from "./chat-tools.js";
 export type { ChatGroup, ChatToolFocus, ChatToolList, MapFocus } from "./chat-tools.js";
-export { stateForPoint } from "./state-geometry.js";
+export { bboxForState, stateForPoint } from "./state-geometry.js";
 export { resolveUsState, statesNamedIn } from "./states.js";
 export { isRestrictedAccessCountry, roundTo1Decimal } from "./restricted.js";
 export type {

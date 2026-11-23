@@ -9,6 +9,7 @@ import {
   chatShowOnMap,
 } from "../src/core/chat-tools.js";
 import { createPeopleGroupsService } from "../src/core/service.js";
+import { stateForPoint } from "../src/core/state-geometry.js";
 import { SENTINELS, jsonResponse, loadFixture, poison } from "./helpers.js";
 
 const recorded = loadFixture<{ record: Record<string, unknown> }>("recorded-pg012345.json").record;
@@ -85,6 +86,27 @@ describe("chat tools", () => {
     expect(payload.map.pgids.length).toBeGreaterThan(0);
     expect(payload.map.bounds).not.toBeNull();
     assertPublic(payload);
+  });
+
+  it("returns only groups whose points are in Texas, and count equals cards", async () => {
+    const payload = await chatShowOnMap(fixtureFetch(), { state: "Texas" });
+    expect(payload.groups.length).toBe(payload.map.pgids.length);
+    expect(payload.groups.map((group) => group.pgid).sort()).toEqual(payload.map.pgids.slice().sort());
+    expect(payload.groups.some((group) => group.pgid === "PG900002")).toBe(false);
+    for (const group of payload.groups) {
+      expect(group.usStates).toContain("TX");
+      if (group.latitude !== null && group.longitude !== null) {
+        expect(stateForPoint(group.latitude, group.longitude)).toBe("TX");
+      }
+    }
+    const bounds = payload.map.bounds;
+    expect(bounds).not.toBeNull();
+    if (!bounds) return;
+    const [west, south, east, north] = bounds;
+    expect(west).toBeLessThan(-103);
+    expect(south).toBeLessThan(27);
+    expect(east).toBeGreaterThan(-94);
+    expect(north).toBeGreaterThan(35);
   });
 
   it("refuses a payload that still contains a banned field", () => {

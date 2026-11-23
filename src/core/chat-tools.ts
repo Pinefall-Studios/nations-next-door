@@ -1,6 +1,8 @@
 import { imbAttribution } from "./attribution.js";
 import { PeopleGroupsError } from "./errors.js";
 import type { PeopleGroupsService } from "./service.js";
+import { bboxForState } from "./state-geometry.js";
+import { resolveUsState } from "./states.js";
 import type { PublicPeopleGroup } from "./types.js";
 
 /** Keys and strings that must never appear in a chat-tool payload. */
@@ -99,21 +101,45 @@ export function assertChatPayloadIsPublic(payload: unknown): void {
   }
 }
 
-function boundsOf(groups: ChatGroup[]): [number, number, number, number] | null {
+function padBounds(bounds: [number, number, number, number]): [number, number, number, number] {
+  const [west, south, east, north] = bounds;
+  const padLng = Math.max((east - west) * 0.15, 0.4);
+  const padLat = Math.max((north - south) * 0.15, 0.4);
+  return [west - padLng, south - padLat, east + padLng, north + padLat];
+}
+
+function unionBounds(
+  boxes: Array<[number, number, number, number] | null>,
+): [number, number, number, number] | null {
+  const present = boxes.filter((box): box is [number, number, number, number] => box !== null);
+  if (present.length === 0) return null;
+  return [
+    Math.min(...present.map((box) => box[0])),
+    Math.min(...present.map((box) => box[1])),
+    Math.max(...present.map((box) => box[2])),
+    Math.max(...present.map((box) => box[3])),
+  ];
+}
+
+function boundsOf(
+  groups: ChatGroup[],
+  stateCode?: string,
+): [number, number, number, number] | null {
   const points = groups.filter(
     (group): group is ChatGroup & { latitude: number; longitude: number } =>
       group.latitude !== null && group.longitude !== null,
   );
-  if (points.length === 0) return null;
-  const lngs = points.map((group) => group.longitude);
-  const lats = points.map((group) => group.latitude);
-  const west = Math.min(...lngs);
-  const east = Math.max(...lngs);
-  const south = Math.min(...lats);
-  const north = Math.max(...lats);
-  const padLng = Math.max((east - west) * 0.15, 0.8);
-  const padLat = Math.max((north - south) * 0.15, 0.8);
-  return [west - padLng, south - padLat, east + padLng, north + padLat];
+  const pointBox: [number, number, number, number] | null = points.length
+    ? [
+        Math.min(...points.map((group) => group.longitude)),
+        Math.min(...points.map((group) => group.latitude)),
+        Math.max(...points.map((group) => group.longitude)),
+        Math.max(...points.map((group) => group.latitude)),
+      ]
+    : null;
+  const stateBox = stateCode ? bboxForState(stateCode) : null;
+  const combined = unionBounds([stateBox, pointBox]);
+  return combined ? padBounds(combined) : null;
 }
 
 function listPayload(
@@ -184,6 +210,7 @@ export async function chatShowOnMap(
   let groups: PublicPeopleGroup[] = [];
   let attribution = imbAttribution(new Date());
   let label = "this view";
+  let stateCode: string | undefined;
 
   if (input.pgid) {
     const result = await service.getPeopleGroup({ pgid: input.pgid });
@@ -199,6 +226,7 @@ export async function chatShowOnMap(
     groups = result.groups;
     attribution = result.attribution;
     label = input.state;
+    stateCode = resolveUsState(input.state).code;
   } else if (input.language) {
     const result = await service.listPeopleGroupsByLanguage({
       language: input.language,
@@ -227,7 +255,7 @@ export async function chatShowOnMap(
     map: {
       label: `Showing ${label}`,
       pgids: chatGroups.map((group) => group.pgid),
-      bounds: boundsOf(chatGroups),
+      bounds: boundsOf(chatGroups, stateCode),
     },
   };
   assertChatPayloadIsPublic(payload);

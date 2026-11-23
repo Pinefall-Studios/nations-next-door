@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { demoAnswer } from "../lib/demo-answer";
-import type { MapCommand } from "../lib/map-command";
+import { commandFor, type MapCommand } from "../lib/map-command";
 import type { ViewGroup } from "../lib/view";
 
 const SUGGESTIONS = [
@@ -14,6 +14,51 @@ const SUGGESTIONS = [
 ];
 
 type ThreadItem = { role: "ask" | "answer"; text: string; groups: ViewGroup[]; source?: string };
+
+type ToolPart = {
+  type: string;
+  input?: unknown;
+  output?: unknown;
+};
+
+function asToolParts(parts: Array<{ type: string }>): ToolPart[] {
+  return parts.filter((part): part is ToolPart => part.type.startsWith("tool-") && "output" in part);
+}
+
+function groupsFromToolParts(parts: Array<{ type: string }>, catalog: ViewGroup[]): ViewGroup[] {
+  const seen = new Set<string>();
+  const found: ViewGroup[] = [];
+  for (const part of asToolParts(parts)) {
+    if (!part.output || typeof part.output !== "object") continue;
+    const output = part.output as { groups?: Array<{ pgid: string }>; group?: { pgid: string } };
+    const rows = output.groups ?? (output.group ? [output.group] : []);
+    for (const item of rows) {
+      if (!item?.pgid || seen.has(item.pgid)) continue;
+      const match = catalog.find((group) => group.pgid === item.pgid);
+      if (!match) continue;
+      seen.add(item.pgid);
+      found.push(match);
+    }
+  }
+  return found;
+}
+
+function mapCommandFromToolParts(parts: Array<{ type: string }>, catalog: ViewGroup[]): MapCommand | null {
+  for (const part of asToolParts(parts)) {
+    if (part.type !== "tool-showOnMap" || !part.output || typeof part.output !== "object") continue;
+    const output = part.output as { map?: MapCommand };
+    if (output.map?.bounds || (output.map?.pgids?.length ?? 0) > 0) return output.map ?? null;
+  }
+  for (const part of asToolParts(parts)) {
+    if (part.type !== "tool-listGroupsByUsState" || !part.output || typeof part.output !== "object") continue;
+    const input = part.input && typeof part.input === "object" ? part.input as { state?: string } : {};
+    const label = input.state ?? "this view";
+    const matched = groupsFromToolParts([part], catalog);
+    if (matched.length === 0) continue;
+    return commandFor(label, matched);
+  }
+  return null;
+}
 
 export function LibrarianPanel({
   groups,
@@ -52,34 +97,26 @@ export function LibrarianPanel({
       const texts = (message.parts ?? [])
         .filter((part) => part.type === "text" && "text" in part)
         .map((part) => ("text" in part ? part.text : ""));
-      const toolGroups: ViewGroup[] = [];
-      for (const part of message.parts ?? []) {
-        if (part.type === "tool-showOnMap" && "output" in part && part.output && typeof part.output === "object") {
-          const output = part.output as { map?: MapCommand; groups?: Array<{ pgid: string }> };
-          for (const item of output.groups ?? []) {
-            const found = groups.find((group) => group.pgid === item.pgid);
-            if (found) toolGroups.push(found);
-          }
-        }
-      }
-      items.push({ role: "answer", text: texts.join("\n"), groups: toolGroups, source: attribution });
+      items.push({
+        role: "answer",
+        text: texts.join("\n"),
+        groups: groupsFromToolParts(message.parts ?? [], groups),
+        source: attribution,
+      });
     }
     return items;
   }, [live.messages, groups, attribution]);
 
   useEffect(() => {
     for (const message of live.messages) {
-      for (const part of message.parts ?? []) {
-        if (part.type !== "tool-showOnMap" || !("output" in part) || !part.output || typeof part.output !== "object") continue;
-        const output = part.output as { map?: MapCommand };
-        if (!output.map) continue;
-        const key = JSON.stringify(output.map);
-        if (key === lastMap.current) continue;
-        lastMap.current = key;
-        onFocus(output.map);
-      }
+      const command = mapCommandFromToolParts(message.parts ?? [], groups);
+      if (!command) continue;
+      const key = JSON.stringify(command);
+      if (key === lastMap.current) continue;
+      lastMap.current = key;
+      onFocus(command);
     }
-  }, [live.messages, onFocus]);
+  }, [live.messages, groups, onFocus]);
 
   const items = demo ? thread : liveText;
   const looking = lookingDemo || (!demo && (live.status === "submitted" || live.status === "streaming"));

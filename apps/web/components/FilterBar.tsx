@@ -74,6 +74,16 @@ export function FilterBar({
             {countries.map((name) => <option key={name} value={name}>{name}</option>)}
           </select>
         </label>
+        <label className="chip-filter">
+          Sort
+          <select
+            value={filters.sort}
+            onChange={(event) => onChange({ ...filters, sort: event.target.value === "largest" ? "largest" : "reach" })}
+          >
+            <option value="reach">Least reached first</option>
+            <option value="largest">Largest</option>
+          </select>
+        </label>
         <button type="button" className="chip-filter more" onClick={onMore}>More filters</button>
       </div>
       <div className="filter-meta">

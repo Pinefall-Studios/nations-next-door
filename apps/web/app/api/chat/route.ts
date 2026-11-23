@@ -20,6 +20,7 @@ const SYSTEM = [
   "Unreached means the evangelical band is under 2%. Never mention or infer GSEC.",
   "Refuse questions about field workers, missionaries, local believers, congregations, engagement, GSEC, or security-sensitive locations. Say you do not have that.",
   "Every answer is one short sentence plus the matching groups. Put the IMB source line on its own last line.",
+  "The number in that sentence must equal the number of groups the tool returned. Do not say five and list four.",
   "When the user asks to see a place or groups on the map, call showOnMap.",
   "Do not invent numbers. If a tool returns nothing, say the public record does not list it.",
   "Do not put Bible Brain audio or text in the answer. You may mention that a listing link exists.",

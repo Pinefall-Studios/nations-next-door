@@ -1,5 +1,7 @@
-import { evangelicalBandDepth, unreachedFromBand } from "../../../src/core/project";
+import { evangelicalBandDepth, evangelicalFloorPercent, unreachedFromBand } from "../../../src/core/project";
 import type { ViewGroup } from "./view";
+
+export type SortMode = "reach" | "largest";
 
 export type Filters = {
   unreachedOnly: boolean;
@@ -10,6 +12,7 @@ export type Filters = {
   band: string;
   popMin: string;
   popMax: string;
+  sort: SortMode;
 };
 
 export const EMPTY_FILTERS: Filters = {
@@ -21,13 +24,22 @@ export const EMPTY_FILTERS: Filters = {
   band: "",
   popMin: "",
   popMax: "",
+  sort: "reach",
 };
 
-/** Deepest evangelical band first, then population descending. */
-export function sortListed(groups: ViewGroup[]): ViewGroup[] {
+/** Deepest evangelical band first, then numeric % ascending when present, then population. */
+export function sortListed(groups: ViewGroup[], sort: SortMode = "reach"): ViewGroup[] {
   return [...groups].sort((a, b) => {
+    if (sort === "largest") {
+      return (b.population ?? 0) - (a.population ?? 0);
+    }
     const deep = evangelicalBandDepth(b.evangelicalBand) - evangelicalBandDepth(a.evangelicalBand);
     if (deep !== 0) return deep;
+    const percentA = evangelicalFloorPercent(a.evangelicalBand);
+    const percentB = evangelicalFloorPercent(b.evangelicalBand);
+    if (percentA !== null && percentB !== null && percentA !== percentB) return percentA - percentB;
+    if (percentA === null && percentB !== null) return 1;
+    if (percentA !== null && percentB === null) return -1;
     return (b.population ?? 0) - (a.population ?? 0);
   });
 }
@@ -51,5 +63,5 @@ export function applyFilters(groups: ViewGroup[], filters: Filters): ViewGroup[]
     if (filters.popMax && Number.isFinite(max) && (group.population ?? 0) > max) return false;
     return true;
   });
-  return sortListed(kept);
+  return sortListed(kept, filters.sort);
 }

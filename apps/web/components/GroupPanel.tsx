@@ -42,9 +42,7 @@ export function GroupPanel({
                 {link.label}
               </a>
             ))}
-            {chips.map((link) => (
-              <p key={`${link.label}-note`} className="notice chip-notice">{link.notice}</p>
-            ))}
+            <p className="notice chip-notice">Links open the publisher&apos;s site; their terms apply.</p>
           </div>
         ) : null}
         <div className="actions panel-nav">

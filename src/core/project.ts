@@ -95,6 +95,16 @@ export function unreachedFromBand(band: string | null): boolean | null {
   return null;
 }
 
+/** Lowest percent mentioned in the public band, when one exists. */
+export function evangelicalFloorPercent(band: string | null): number | null {
+  if (!band) return null;
+  const percents = [...band.matchAll(/(\d+(?:\.\d+)?)\s*%/g)]
+    .map((match) => Number(match[1]))
+    .filter((value) => Number.isFinite(value));
+  if (percents.length === 0) return null;
+  return Math.min(...percents);
+}
+
 /** 0 = 20%+, 4 = under 2%. Used to sort deepest band first. */
 export function evangelicalBandDepth(band: string | null): number {
   if (!band) return 2;
@@ -116,19 +126,17 @@ function evangelicalBand(value: unknown): string | null {
 
 function usStatesFor(raw: Record<string, unknown>, code: string | null): string[] {
   if (code !== "USA") return [];
-  const states = new Set<string>();
   const latitude = finiteNumber(pick(raw, ["Lat", "Latitude"]));
   const longitude = finiteNumber(pick(raw, ["Long", "Longitude", "Lng"]));
   if (latitude !== null && longitude !== null) {
     const hit = stateForPoint(latitude, longitude);
-    if (hit) states.add(hit);
+    return hit ? [hit] : [];
   }
-  // The location prose is used only to read US state names, then discarded.
+  // Prose is a fallback only when there is no published point. It cannot
+  // add a state that would contradict a point, because the point already returned.
   const location = pick(raw, ["LocationDescription", "LocationDesc"]);
-  if (typeof location === "string") {
-    for (const state of statesNamedIn(location)) states.add(state);
-  }
-  return [...states].sort();
+  if (typeof location !== "string") return [];
+  return [...new Set(statesNamedIn(location))].sort();
 }
 
 function publishCoordinates(

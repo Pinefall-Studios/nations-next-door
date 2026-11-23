@@ -53,18 +53,17 @@ export function demoAnswer(question: string, groups: ViewGroup[], attribution: s
     };
   }
 
-  const shown = picked.slice(0, 4);
-  const kind = shown.every((group) => group.unreached === true) ? "unreached group" : "people group";
+  const kind = picked.every((group) => group.unreached === true) ? "unreached group" : "people group";
   const resourceNote = asked.includes("resource") || asked.includes("language") || asked.includes("bible")
     ? " Scripture links on each card point outward. They are not hosted here."
     : "";
-  const sentence = shown.length === 1
-    ? `${shown[0].name} is in the public record for ${label}.`
+  const sentence = picked.length === 1
+    ? `${picked[0]?.name} is in the public record for ${label}.`
     : `${picked.length} ${kind}s in ${label}, from the public people-group record.`;
 
   return {
     text: `${sentence}${resourceNote}`,
-    map: commandFor(label, shown),
-    groups: shown,
+    map: commandFor(label, picked),
+    groups: picked,
   };
 }

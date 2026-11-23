@@ -23,8 +23,8 @@ function cameraPadding(map: MapRef, insetBottom: number, kind: "fit" | "point" |
   const width = canvas.clientWidth || window.innerWidth;
   const height = canvas.clientHeight || window.innerHeight;
   if (mobile) {
-    const bottom = Math.max(Math.round(insetBottom) || Math.round(height * 0.58), 72);
-    return { top: 56, bottom, left: 24, right: 24 };
+    const bottom = insetBottom > 0 ? Math.round(insetBottom) : Math.round(height * 0.58);
+    return { top: 72, bottom, left: 16, right: 16 };
   }
   if (kind === "fit") {
     const dock = 372;
@@ -108,6 +108,7 @@ export function AtlasMap({
     const padding = cameraPadding(map, insetBottom, command?.bounds ? "fit" : "scope");
     if (command?.bounds) {
       const [west, south, east, north] = command.bounds;
+      map.getMap().resize();
       map.fitBounds([[west, south], [east, north]], { padding, duration, easing: (t) => 1 - (1 - t) ** 3 });
       return;
     }

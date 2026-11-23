@@ -97,7 +97,7 @@ export const SAMPLE_SEEDS: SampleSeed[] = [
     evangelicalLevel: "Less than 2%",
     lat: 29.69,
     lng: -91.61,
-    usStates: ["LA", "MS", "TX"],
+    usStates: ["LA"],
   },
   {
     pgid: "PG047200",

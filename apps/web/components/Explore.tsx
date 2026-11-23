@@ -98,6 +98,11 @@ export function Explore({ initial }: { initial: Catalog }) {
   }, [selected, sheet, ask]);
 
   useEffect(() => {
+    listRef.current?.scrollTo({ top: 0 });
+    sheetRef.current?.scrollTo({ top: 0 });
+  }, [scope, filters]);
+
+  useEffect(() => {
     const node = sheetRef.current;
     if (!node) return;
     const measure = () => setSheetHeight(node.getBoundingClientRect().height);
@@ -228,6 +233,7 @@ export function Explore({ initial }: { initial: Catalog }) {
           ) : null}
         </div>
         <div ref={sheetRef} className={`sheet is-${ask ? "ask" : sheet}`}>
+          <div className="sheet-chrome">
           <button type="button" className="grab" aria-label="Resize list" onClick={() => setSheet((current) => current === "peek" ? "half" : current === "half" ? "full" : "peek")} />
           <div className="sheet-head">
             {showCard && selectedGroup ? (
@@ -242,6 +248,7 @@ export function Explore({ initial }: { initial: Catalog }) {
                 )}
               </>
             )}
+          </div>
           </div>
           {ask ? (
             <LibrarianPanel

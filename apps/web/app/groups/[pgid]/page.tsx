@@ -91,9 +91,9 @@ export default async function GroupPage({
                 </li>
               ))}
             </ul>
-            {group.links.map((link) => (
-              <p key={`${link.label}-note`} className="notice">{link.notice}</p>
-            ))}
+            {group.links.length > 0 ? (
+              <p className="notice">Links open the publisher&apos;s site; their terms apply.</p>
+            ) : null}
             <div className="actions">
               <a className="btn" href="#pray">Pray</a>
               <Link className="btn secondary" href={`/groups/${group.pgid}?ask=1`}>Ask about this group</Link>

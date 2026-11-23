@@ -103,6 +103,14 @@ function pointInPolygon(lng: number, lat: number, polygon: number[][][]): boolea
   return true;
 }
 
+/** Bounding box [west, south, east, north] of a state, or null when unknown. */
+export function bboxForState(code: string): [number, number, number, number] | null {
+  const state = loadStates().find((item) => item.code === code);
+  if (!state) return null;
+  const [minLng, minLat, maxLng, maxLat] = state.bbox;
+  return [minLng, minLat, maxLng, maxLat];
+}
+
 /** Postal code of the state that contains this point, or null when none does. */
 export function stateForPoint(latitude: number, longitude: number): string | null {
   for (const state of loadStates()) {

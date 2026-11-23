@@ -1,5 +1,6 @@
 import { unreachedFromBand } from "../../../src/core/project";
 import { isRestrictedAccessCountry, roundTo1Decimal } from "../../../src/core/restricted";
+import { stateForPoint } from "../../../src/core/state-geometry";
 import { resourceLinks, scriptureRows } from "./resources";
 import { SAMPLE_SEEDS, type SampleSeed } from "./sample";
 import type { Catalog, ViewGroup } from "./view";
@@ -48,6 +49,13 @@ function scriptureFor(seed: SampleSeed) {
   return scriptureRows({ bibleHref: bible, audioHref: audio, jesusHref: jesus, gospelHref: gospel });
 }
 
+function statesForSeed(seed: SampleSeed): string[] {
+  if (seed.countryCode !== "USA") return [];
+  const hit = stateForPoint(seed.lat, seed.lng);
+  if (hit) return [hit];
+  return seed.usStates ?? [];
+}
+
 function fromSeed(seed: SampleSeed): ViewGroup {
   const rounded = isRestrictedAccessCountry(seed.countryCode);
   return {
@@ -56,7 +64,7 @@ function fromSeed(seed: SampleSeed): ViewGroup {
     nativeName: seed.nativeName,
     country: seed.country,
     countryCode: seed.countryCode,
-    usStates: seed.usStates ?? [],
+    usStates: statesForSeed(seed),
     population: seed.population,
     languageName: seed.languageName,
     languageCode: seed.languageCode,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evangelicalBandDepth, toPublicPeopleGroup, unreachedFromBand } from "../src/core/project.js";
+import { evangelicalBandDepth, evangelicalFloorPercent, toPublicPeopleGroup, unreachedFromBand } from "../src/core/project.js";
 import { SENTINELS, loadFixture, poison } from "./helpers.js";
 
 const recorded = loadFixture<{ record: Record<string, unknown> }>("recorded-pg012345.json").record;
@@ -123,6 +123,46 @@ describe("unreachedFromBand", () => {
         return b.population - a.population;
       });
     expect(listed.map((group) => group.name)).toEqual(["Somali", "Yazidi"]);
+  });
+
+  it("reads a numeric floor from a public evangelical band when one exists", () => {
+    expect(evangelicalFloorPercent("Less than 2%")).toBe(2);
+    expect(evangelicalFloorPercent("15% or Greater but Less than 20%")).toBe(15);
+    expect(evangelicalFloorPercent(null)).toBeNull();
+  });
+});
+
+describe("US state assignment", () => {
+  it("assigns the state of the published point and ignores contradictory location prose", () => {
+    const group = toPublicPeopleGroup({
+      PGID: "PG043186",
+      DisplayName: "Cajuns",
+      ISOAlpha3: "USA",
+      CountryName: "United States",
+      Population: 79000,
+      EvangelicalLevel: "Less than 2%",
+      Lat: 29.69,
+      Long: -91.61,
+      LocationDescription: "Louisiana: coast; Texas: small border area SENTINEL_LOCATION_TEXT",
+    });
+    expect(group?.usStates).toEqual(["LA"]);
+    expect(JSON.stringify(group)).not.toContain("SENTINEL_LOCATION_TEXT");
+  });
+
+  it("uses location names only when the published point is missing", () => {
+    const group = toPublicPeopleGroup({
+      PGID: "PG900004",
+      DisplayName: "Description Only Group",
+      ISOAlpha3: "USA",
+      CountryName: "United States",
+      Population: 1200,
+      EvangelicalLevel: "Less than 2%",
+      Lat: null,
+      Long: null,
+      LocationDescription: "Texas: SENTINEL_LOCATION_TEXT near Lufkin",
+    });
+    expect(group?.usStates).toEqual(["TX"]);
+    expect(JSON.stringify(group)).not.toContain("SENTINEL_LOCATION_TEXT");
   });
 });
 
