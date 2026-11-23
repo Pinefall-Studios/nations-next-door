@@ -3,6 +3,7 @@ import type { Map as MapLibreMap, PaddingOptions } from "maplibre-gl";
 declare global {
   interface Window {
     __ATLAS_MAP__?: MapLibreMap;
+    __ATLAS_PADDING__?: CameraPadding;
   }
 }
 
@@ -18,9 +19,10 @@ export function clampCameraPadding(
   width: number,
   height: number,
   wanted: CameraPadding,
+  minVisibleRatio = 0.3,
 ): CameraPadding {
-  const minVisibleX = Math.max(96, Math.round(width * 0.3));
-  const minVisibleY = Math.max(96, Math.round(height * 0.3));
+  const minVisibleX = Math.max(64, Math.round(width * minVisibleRatio));
+  const minVisibleY = Math.max(80, Math.round(height * minVisibleRatio));
   const maxX = Math.max(0, width - minVisibleX);
   const maxY = Math.max(0, height - minVisibleY);
   let left = Math.max(0, wanted.left);
@@ -52,6 +54,11 @@ export function exposeAtlasMap(map: MapLibreMap): void {
   window.__ATLAS_MAP__ = map;
 }
 
+export function exposeAtlasPadding(padding: CameraPadding): void {
+  if (!isTestMode()) return;
+  window.__ATLAS_PADDING__ = padding;
+}
+
 export function mapHasSize(map: MapLibreMap): boolean {
   const node = map.getContainer();
   return node.clientWidth >= 40 && node.clientHeight >= 40;
@@ -60,6 +67,9 @@ export function mapHasSize(map: MapLibreMap): boolean {
 /**
  * Fit the map to [west, south, east, north]. Returns false when the container
  * is not ready so the caller can retry on load.
+ *
+ * Uses absolutePadding so leftover easeTo padding is not added on top of this
+ * fit. Camera padding is the only inset (about 10–15% on desktop).
  */
 export function fitMapToBounds(
   map: MapLibreMap,
@@ -71,13 +81,18 @@ export function fitMapToBounds(
   if (!mapHasSize(map)) return false;
   const node = map.getContainer();
   const padding = clampCameraPadding(node.clientWidth, node.clientHeight, wanted);
+  exposeAtlasPadding(padding);
   const [west, south, east, north] = bounds;
   const box: [[number, number], [number, number]] = [
     [west, south],
     [east, north],
   ];
   map.stop();
-  const fitted = map.cameraForBounds(box, { padding: padding as PaddingOptions });
+  const fitted = map.cameraForBounds(box, {
+    padding: padding as PaddingOptions,
+    absolutePadding: true,
+    maxZoom: 8,
+  });
   if (!fitted) {
     const fallback = clampCameraPadding(node.clientWidth, node.clientHeight, {
       top: 16,
@@ -85,11 +100,28 @@ export function fitMapToBounds(
       left: 16,
       right: 16,
     });
-    const retry = map.cameraForBounds(box, { padding: fallback as PaddingOptions });
+    exposeAtlasPadding(fallback);
+    const retry = map.cameraForBounds(box, {
+      padding: fallback as PaddingOptions,
+      absolutePadding: true,
+      maxZoom: 8,
+    });
     if (!retry) return false;
-    map.fitBounds(box, { padding: fallback, duration, linear: true });
+    map.fitBounds(box, {
+      padding: fallback,
+      absolutePadding: true,
+      duration,
+      linear: true,
+      maxZoom: 8,
+    });
     return true;
   }
-  map.fitBounds(box, { padding, duration, linear: true });
+  map.fitBounds(box, {
+    padding,
+    absolutePadding: true,
+    duration,
+    linear: true,
+    maxZoom: 8,
+  });
   return true;
 }

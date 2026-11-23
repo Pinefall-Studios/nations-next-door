@@ -30,21 +30,30 @@ function nativeMap(ref: MapRef | null): MapLibreMap | null {
   return ref?.getMap() ?? null;
 }
 
+function toggleTopPadding(map: MapLibreMap): number {
+  const atlas = map.getContainer().closest(".atlas");
+  const toggle = atlas?.querySelector(".atlas-toggle");
+  if (!(toggle instanceof HTMLElement)) return 96;
+  const mapRect = map.getContainer().getBoundingClientRect();
+  const toggleRect = toggle.getBoundingClientRect();
+  return Math.max(72, Math.ceil(toggleRect.bottom - mapRect.top) + 16);
+}
+
 function cameraPadding(map: MapLibreMap, insetBottom: number, kind: "fit" | "point" | "scope"): CameraPadding {
   const mobile = window.matchMedia("(max-width: 959px)").matches;
   const canvas = map.getContainer();
   const width = canvas.clientWidth || window.innerWidth;
   const height = canvas.clientHeight || window.innerHeight;
   if (mobile) {
-    const top = 72;
+    const top = toggleTopPadding(map);
     const requested = insetBottom > 0 ? Math.round(insetBottom) : Math.round(height * 0.58);
     const bottom = Math.min(requested, Math.max(0, height - top - 120));
-    return clampCameraPadding(width, height, { top, bottom, left: 16, right: 16 });
+    return clampCameraPadding(width, height, { top, bottom, left: 16, right: 16 }, 0.18);
   }
   if (kind === "fit") {
-    const padX = Math.round(width * 0.15);
-    const padY = Math.round(height * 0.15);
-    return clampCameraPadding(width, height, { top: padY, bottom: padY, left: padX, right: padX });
+    const padX = Math.round(width * 0.12);
+    const padY = Math.round(height * 0.12);
+    return clampCameraPadding(width, height, { top: padY, bottom: padY, left: padX, right: padX }, 0.55);
   }
   return clampCameraPadding(width, height, { top: 72, bottom: 72, left: 48, right: 80 });
 }
@@ -286,6 +295,20 @@ export function AtlasMap({
             type="line"
             layout={{ visibility: scope === "us" ? "visible" : "none" }}
             paint={{ "line-color": "#CFC4B2", "line-width": 0.6, "line-opacity": 0.65 }}
+          />
+          <Layer
+            id="state-focus-fill"
+            type="fill"
+            filter={command?.stateCode ? ["==", ["get", "postal"], command.stateCode] : ["==", ["get", "postal"], ""]}
+            layout={{ visibility: command?.stateCode ? "visible" : "none" }}
+            paint={{ "fill-color": "#B4532A", "fill-opacity": 0.06 }}
+          />
+          <Layer
+            id="state-focus-line"
+            type="line"
+            filter={command?.stateCode ? ["==", ["get", "postal"], command.stateCode] : ["==", ["get", "postal"], ""]}
+            layout={{ visibility: command?.stateCode ? "visible" : "none" }}
+            paint={{ "line-color": "#B4532A", "line-width": 2, "line-opacity": 0.95 }}
           />
         </Source>
         <Source

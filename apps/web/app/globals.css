@@ -303,10 +303,35 @@ main.shell { padding-bottom: 40px; }
 }
 .chip-filter.is-on { background: #f6e3d6; border-color: transparent; }
 .chip-filter select { border: 0; background: transparent; min-height: 0; padding: 0; max-width: 14rem; }
-.chip-filter.place select { min-width: 12rem; max-width: 18rem; }
+.chip-filter.place select { min-width: 10rem; max-width: 14rem; }
+.chip-filter.sort-compact {
+  position: relative;
+  width: 40px;
+  padding: 8px;
+  justify-content: center;
+  overflow: hidden;
+}
+.chip-filter.sort-compact select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  max-width: none;
+  cursor: pointer;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 @media (min-width: 960px) {
   .chip-row {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     overflow: visible;
     scroll-snap-type: none;
     touch-action: auto;
@@ -364,11 +389,18 @@ main.shell { padding-bottom: 40px; }
   position: absolute;
   left: 12px;
   bottom: 36px;
-  z-index: 2;
+  z-index: 3;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 8px 12px;
+}
+@media (max-width: 959px) {
+  .undo-chip {
+    top: 60px;
+    bottom: auto;
+    max-width: calc(100% - 24px);
+  }
 }
 .band-mini { display: inline-flex; gap: 3px; margin-top: 6px; }
 .band-mini i { width: 18px; height: 8px; border-radius: 999px; display: block; }

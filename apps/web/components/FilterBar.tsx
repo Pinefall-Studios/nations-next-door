@@ -74,9 +74,15 @@ export function FilterBar({
             {countries.map((name) => <option key={name} value={name}>{name}</option>)}
           </select>
         </label>
-        <label className="chip-filter">
-          Sort
+        <button type="button" className="chip-filter more" onClick={onMore}>More filters</button>
+        <label className="chip-filter sort-compact">
+          <span className="sr-only">Sort</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path d="M4 7h10M4 12h7M4 17h4" />
+            <path d="M16 7v10M16 17l3-3M16 17l-3-3" />
+          </svg>
           <select
+            aria-label="Sort"
             value={filters.sort}
             onChange={(event) => onChange({ ...filters, sort: event.target.value === "largest" ? "largest" : "reach" })}
           >
@@ -84,7 +90,6 @@ export function FilterBar({
             <option value="largest">Largest</option>
           </select>
         </label>
-        <button type="button" className="chip-filter more" onClick={onMore}>More filters</button>
       </div>
       <div className="filter-meta">
         <p className="nums">{resultLine}</p>

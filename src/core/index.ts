@@ -22,7 +22,7 @@ export {
   toChatGroup,
 } from "./chat-tools.js";
 export type { ChatGroup, ChatToolFocus, ChatToolList, MapFocus } from "./chat-tools.js";
-export { bboxForState, stateForPoint } from "./state-geometry.js";
+export { bboxForState, boundsForStateAndPoints, stateForPoint } from "./state-geometry.js";
 export { resolveUsState, statesNamedIn } from "./states.js";
 export { isRestrictedAccessCountry, roundTo1Decimal } from "./restricted.js";
 export type {

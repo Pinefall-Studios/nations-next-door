@@ -111,6 +111,48 @@ export function bboxForState(code: string): [number, number, number, number] | n
   return [minLng, minLat, maxLng, maxLat];
 }
 
+function pointInBox(
+  latitude: number,
+  longitude: number,
+  box: [number, number, number, number],
+  slop = 0.5,
+): boolean {
+  const [west, south, east, north] = box;
+  return longitude >= west - slop && longitude <= east + slop && latitude >= south - slop && latitude <= north + slop;
+}
+
+/**
+ * Tight [west, south, east, north] for a state polygon plus in-state points.
+ * Points outside the state bbox are ignored so a far-off group cannot inflate the fit.
+ * No geographic padding — the camera applies 10–15% padding.
+ */
+export function boundsForStateAndPoints(
+  stateCode: string | undefined,
+  points: Array<{ latitude: number; longitude: number }>,
+): [number, number, number, number] | null {
+  const stateBox = stateCode ? bboxForState(stateCode) : null;
+  const kept = stateBox
+    ? points.filter((point) => pointInBox(point.latitude, point.longitude, stateBox))
+    : points;
+  const boxes: Array<[number, number, number, number]> = [];
+  if (stateBox) boxes.push(stateBox);
+  if (kept.length > 0) {
+    boxes.push([
+      Math.min(...kept.map((point) => point.longitude)),
+      Math.min(...kept.map((point) => point.latitude)),
+      Math.max(...kept.map((point) => point.longitude)),
+      Math.max(...kept.map((point) => point.latitude)),
+    ]);
+  }
+  if (boxes.length === 0) return null;
+  return [
+    Math.min(...boxes.map((box) => box[0])),
+    Math.min(...boxes.map((box) => box[1])),
+    Math.max(...boxes.map((box) => box[2])),
+    Math.max(...boxes.map((box) => box[3])),
+  ];
+}
+
 /** Postal code of the state that contains this point, or null when none does. */
 export function stateForPoint(latitude: number, longitude: number): string | null {
   for (const state of loadStates()) {
