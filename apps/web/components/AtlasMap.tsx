@@ -13,6 +13,8 @@ import {
   fitMapToBounds,
   isTestMode,
   mapHasSize,
+  sheetOverlapBottom,
+  waitForLayoutSettle,
   type CameraPadding,
 } from "../lib/camera";
 import { ensureMapWorker } from "../lib/maplibre-worker";
@@ -47,16 +49,15 @@ function chromeTopPadding(map: MapLibreMap, reserveUndo: boolean): number {
   return Math.max(72, Math.ceil(bottom) + 16);
 }
 
-function cameraPadding(map: MapLibreMap, insetBottom: number, kind: "fit" | "point" | "scope"): CameraPadding {
+function cameraPadding(map: MapLibreMap, kind: "fit" | "point" | "scope"): CameraPadding {
   const mobile = window.matchMedia("(max-width: 959px)").matches;
   const canvas = map.getContainer();
   const width = canvas.clientWidth || window.innerWidth;
   const height = canvas.clientHeight || window.innerHeight;
   if (mobile) {
     const top = chromeTopPadding(map, kind === "fit");
-    const requested = (insetBottom > 0 ? Math.round(insetBottom) : Math.round(height * 0.58)) + 12;
-    const bottom = Math.min(requested, Math.max(0, height - top - 120));
-    return clampCameraPadding(width, height, { top, bottom, left: 16, right: 16 }, 0.18);
+    const bottom = Math.min(sheetOverlapBottom(map, 12), Math.max(0, height - top - 80));
+    return clampCameraPadding(width, height, { top, bottom, left: 16, right: 16 }, 0.15);
   }
   if (kind === "fit") {
     const padX = Math.round(width * 0.12);
@@ -73,7 +74,7 @@ export function AtlasMap({
   highlightedPgids,
   command,
   bloom,
-  insetBottom = 0,
+  sheetMode,
   onSelect,
   onHover,
   onScope,
@@ -84,14 +85,13 @@ export function AtlasMap({
   highlightedPgids: string[];
   command: MapCommand | null;
   bloom: boolean;
-  insetBottom?: number;
+  sheetMode: string;
   onSelect: (pgid: string | null) => void;
   onHover: (info: HoverInfo | null) => void;
   onScope: (scope: "us" | "world") => void;
 }) {
   const mapRef = useRef<MapRef>(null);
   const commandRef = useRef(command);
-  const insetRef = useRef(insetBottom);
   const collection = useMemo<FeatureCollection<Point>>(() => ({
     type: "FeatureCollection",
     features: groups.flatMap((group) => {
@@ -134,11 +134,12 @@ export function AtlasMap({
 
   useEffect(() => {
     commandRef.current = command;
-    insetRef.current = insetBottom;
-  }, [command, insetBottom]);
+  }, [command]);
 
   useEffect(() => {
     let cancelled = false;
+    let sizeTimer = 0;
+    let sizeStop = 0;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const duration = reduce || isTestMode() ? 0 : 500;
 
@@ -146,7 +147,7 @@ export function AtlasMap({
       exposeAtlasMap(map);
       map.resize();
       if (!mapHasSize(map)) return false;
-      const padding = cameraPadding(map, insetBottom, command?.bounds ? "fit" : "scope");
+      const padding = cameraPadding(map, command?.bounds ? "fit" : "scope");
       if (command?.bounds) {
         return fitMapToBounds(map, command.bounds, padding, duration);
       }
@@ -163,18 +164,26 @@ export function AtlasMap({
       return apply(map);
     }
 
-    if (attempt()) return () => { cancelled = true; };
+    function start() {
+      if (attempt()) return;
+      sizeTimer = window.setInterval(() => {
+        if (attempt()) window.clearInterval(sizeTimer);
+      }, 80);
+      sizeStop = window.setTimeout(() => window.clearInterval(sizeTimer), 4000);
+    }
 
-    const timer = window.setInterval(() => {
-      if (attempt()) window.clearInterval(timer);
-    }, 80);
-    const stop = window.setTimeout(() => window.clearInterval(timer), 4000);
+    const mapNode = nativeMap(mapRef.current)?.getContainer();
+    const sheet = mapNode?.closest(".explore")?.querySelector(".sheet")
+      ?? document.querySelector(".explore .sheet")
+      ?? null;
+    const stopSettle = waitForLayoutSettle(sheet, start);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
-      window.clearTimeout(stop);
+      stopSettle();
+      window.clearInterval(sizeTimer);
+      window.clearTimeout(sizeStop);
     };
-  }, [command, scope, insetBottom]);
+  }, [command, scope, sheetMode]);
 
   useEffect(() => {
     if (command?.bounds) return;
@@ -187,9 +196,9 @@ export function AtlasMap({
     map.easeTo({
       center: [group.longitude, group.latitude],
       duration: reduce || isTestMode() ? 0 : 400,
-      padding: cameraPadding(map, insetBottom, "point"),
+      padding: cameraPadding(map, "point"),
     });
-  }, [selectedPgid, groups, command, insetBottom]);
+  }, [selectedPgid, groups, command, sheetMode]);
 
   function pick(event: MapMouseEvent): string | null {
     const features = event.features ?? [];
@@ -264,13 +273,18 @@ export function AtlasMap({
           exposeAtlasMap(map);
           map.resize();
           if (!commandRef.current?.bounds) return;
-          const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-          fitMapToBounds(
-            map,
-            commandRef.current.bounds,
-            cameraPadding(map, insetRef.current, "fit"),
-            reduce || isTestMode() ? 0 : 500,
-          );
+          const sheet = map.getContainer().closest(".explore")?.querySelector(".sheet") ?? null;
+          const bounds = commandRef.current.bounds;
+          waitForLayoutSettle(sheet, () => {
+            if (!bounds) return;
+            const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            fitMapToBounds(
+              map,
+              bounds,
+              cameraPadding(map, "fit"),
+              reduce || isTestMode() ? 0 : 500,
+            );
+          });
         }}
         onClick={(event) => onSelect(pick(event))}
         onMouseMove={(event) => {

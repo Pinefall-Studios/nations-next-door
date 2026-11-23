@@ -64,6 +64,53 @@ export function mapHasSize(map: MapLibreMap): boolean {
   return node.clientWidth >= 40 && node.clientHeight >= 40;
 }
 
+/** Overlap of the sheet on the map canvas, plus a small gap above the sheet edge. */
+export function sheetOverlapBottom(map: MapLibreMap, extra = 12): number {
+  const canvas = map.getContainer();
+  const sheet = canvas.closest(".explore")?.querySelector(".sheet");
+  if (!(sheet instanceof HTMLElement)) {
+    return Math.round(canvas.clientHeight * 0.58) + extra;
+  }
+  return Math.max(
+    0,
+    Math.ceil(canvas.getBoundingClientRect().bottom - sheet.getBoundingClientRect().top + extra),
+  );
+}
+
+/** Wait until a node's box stops moving (sheet detent / snap). */
+export function waitForLayoutSettle(
+  node: Element | null,
+  done: () => void,
+  options?: { stableMs?: number; timeoutMs?: number },
+): () => void {
+  const stableMs = options?.stableMs ?? (isTestMode() ? 32 : 80);
+  const timeoutMs = options?.timeoutMs ?? 700;
+  if (!node) {
+    done();
+    return () => undefined;
+  }
+  let last = node.getBoundingClientRect();
+  let stableAt = performance.now();
+  const started = performance.now();
+  let raf = 0;
+  const tick = () => {
+    const box = node.getBoundingClientRect();
+    const now = performance.now();
+    const moved = Math.abs(box.top - last.top) > 1 || Math.abs(box.height - last.height) > 1;
+    if (moved) {
+      last = box;
+      stableAt = now;
+    }
+    if (now - stableAt >= stableMs || now - started >= timeoutMs) {
+      done();
+      return;
+    }
+    raf = window.requestAnimationFrame(tick);
+  };
+  raf = window.requestAnimationFrame(tick);
+  return () => window.cancelAnimationFrame(raf);
+}
+
 /**
  * Fit the map to [west, south, east, north]. Returns false when the container
  * is not ready so the caller can retry on load.
@@ -80,7 +127,7 @@ export function fitMapToBounds(
   map.resize();
   if (!mapHasSize(map)) return false;
   const node = map.getContainer();
-  const padding = clampCameraPadding(node.clientWidth, node.clientHeight, wanted);
+  const padding = wanted;
   exposeAtlasPadding(padding);
   const [west, south, east, north] = bounds;
   const box: [[number, number], [number, number]] = [

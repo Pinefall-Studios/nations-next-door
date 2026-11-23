@@ -40,7 +40,6 @@ export function Explore({ initial }: { initial: Catalog }) {
   const [demo, setDemo] = useState(true);
   const listRef = useRef<HTMLUListElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
-  const [sheetHeight, setSheetHeight] = useState(0);
 
   useEffect(() => {
     fetch("/api/chat").then((res) => res.json()).then((body) => setDemo(Boolean(body.demo))).catch(() => setDemo(true));
@@ -104,16 +103,6 @@ export function Explore({ initial }: { initial: Catalog }) {
     listRef.current?.scrollTo({ top: 0 });
     sheetRef.current?.scrollTo({ top: 0 });
   }, [scope, filters]);
-
-  useEffect(() => {
-    const node = sheetRef.current;
-    if (!node) return;
-    const measure = () => setSheetHeight(node.getBoundingClientRect().height);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [ask, sheet]);
 
   const focus = useCallback((next: MapCommand) => {
     setHistory((current) => (command ? [...current, command] : current));
@@ -194,7 +183,7 @@ export function Explore({ initial }: { initial: Catalog }) {
             highlightedPgids={command?.pgids ?? []}
             command={command}
             bloom={bloom}
-            insetBottom={sheetHeight}
+            sheetMode={ask ? "ask" : sheet}
             onSelect={select}
             onHover={setHover}
             onScope={(next) => {

@@ -95,6 +95,36 @@ test.describe("Texas chat frames the state", () => {
     const fill = await texasFillRatio(page);
     expect(fill).toBeGreaterThanOrEqual(0.55);
 
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 960) {
+      await page.waitForFunction((texas) => {
+        const map = window.__ATLAS_MAP__;
+        const sheet = document.querySelector(".sheet");
+        if (!map || !(sheet instanceof HTMLElement)) return false;
+        const mapRect = map.getContainer().getBoundingClientRect();
+        const southWest = map.project([texas.west, texas.south]);
+        const southEast = map.project([texas.east, texas.south]);
+        const texasBottom = mapRect.top + Math.max(southWest.y, southEast.y);
+        return texasBottom <= sheet.getBoundingClientRect().top - 8;
+      }, TEXAS, { timeout: 15_000 });
+      const placement = await page.evaluate((texas) => {
+        const map = window.__ATLAS_MAP__;
+        const sheet = document.querySelector(".sheet");
+        if (!map || !(sheet instanceof HTMLElement)) return null;
+        const mapRect = map.getContainer().getBoundingClientRect();
+        const southWest = map.project([texas.west, texas.south]);
+        const southEast = map.project([texas.east, texas.south]);
+        return {
+          texasBottom: mapRect.top + Math.max(southWest.y, southEast.y),
+          sheetTop: sheet.getBoundingClientRect().top,
+        };
+      }, TEXAS);
+      expect(placement).not.toBeNull();
+      if (placement) {
+        expect(placement.texasBottom).toBeLessThanOrEqual(placement.sheetTop - 8);
+      }
+    }
+
     const outline = await page.evaluate(() => {
       const map = window.__ATLAS_MAP__;
       if (!map?.getLayer("state-focus-line")) return null;

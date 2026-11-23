@@ -1,11 +1,29 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { shortBand } from "../lib/band";
 import { type Filters } from "../lib/filters";
 import { US_STATES } from "../lib/us-states";
 import type { ViewGroup } from "../lib/view";
 
 export { applyFilters, EMPTY_FILTERS, type Filters } from "../lib/filters";
+
+function SortGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M4 7h10M4 12h7M4 17h4" />
+      <path d="M16 7v10M16 17l3-3M16 17l-3-3" />
+    </svg>
+  );
+}
+
+function FilterGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M4 6h16M7 12h10M10 18h4" />
+    </svg>
+  );
+}
 
 export function FilterBar({
   groups,
@@ -34,6 +52,38 @@ export function FilterBar({
   const religions = [...new Set(groups.map((group) => group.religion).filter(Boolean))] as string[];
   const bands = [...new Set(groups.map((group) => group.evangelicalBand).filter(Boolean))] as string[];
   const countries = [...new Set(groups.map((group) => group.country).filter(Boolean))] as string[];
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onPointer(event: PointerEvent) {
+      if (menuRef.current?.contains(event.target as Node)) return;
+      setMenuOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  function sortSelect() {
+    return (
+      <select
+        aria-label="Sort"
+        value={filters.sort}
+        onChange={(event) => onChange({ ...filters, sort: event.target.value === "largest" ? "largest" : "reach" })}
+      >
+        <option value="reach">Least reached</option>
+        <option value="largest">Largest</option>
+      </select>
+    );
+  }
 
   return (
     <div className="filter-bar">
@@ -80,19 +130,39 @@ export function FilterBar({
           <button type="button" className="chip-filter more" onClick={onMore}>More filters</button>
           <label className="chip-filter sort-compact">
             <span className="sr-only">Sort</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M4 7h10M4 12h7M4 17h4" />
-              <path d="M16 7v10M16 17l3-3M16 17l-3-3" />
-            </svg>
-            <select
-              aria-label="Sort"
-              value={filters.sort}
-              onChange={(event) => onChange({ ...filters, sort: event.target.value === "largest" ? "largest" : "reach" })}
-            >
-              <option value="reach">Least reached</option>
-              <option value="largest">Largest</option>
-            </select>
+            <SortGlyph />
+            {sortSelect()}
           </label>
+          <div className="filter-menu" ref={menuRef}>
+            <button
+              type="button"
+              className="chip-filter filter-menu-btn"
+              aria-label="Filters and sort"
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <FilterGlyph />
+            </button>
+            {menuOpen ? (
+              <div className="filter-menu-panel" role="menu">
+                <label className="filter-menu-sort">
+                  <span>Sort</span>
+                  {sortSelect()}
+                </label>
+                <button
+                  type="button"
+                  className="chip-filter more"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onMore();
+                  }}
+                >
+                  More filters
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
       <div className="filter-meta">

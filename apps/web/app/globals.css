@@ -276,6 +276,7 @@ main.shell { padding-bottom: 40px; }
 .filter-bar { padding: 8px 16px 0; }
 .filter-toolbar {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -288,20 +289,22 @@ main.shell { padding-bottom: 40px; }
 }
 .chip-row {
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  width: 0;
   flex-wrap: nowrap;
   gap: 8px;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+  scrollbar-width: none;
   padding-bottom: 6px;
   min-width: 0;
   touch-action: pan-x;
   mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
 }
+.chip-row::-webkit-scrollbar { display: none; }
 .chip-filter {
   flex: 0 0 auto;
   scroll-snap-align: start;
@@ -332,6 +335,35 @@ main.shell { padding-bottom: 40px; }
   max-width: none;
   cursor: pointer;
 }
+.filter-menu { display: none; position: relative; flex: 0 0 auto; }
+.filter-menu-btn {
+  width: 40px;
+  padding: 8px;
+  justify-content: center;
+}
+.filter-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 12.5rem;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(31, 27, 22, 0.08);
+}
+.filter-menu-sort {
+  display: grid;
+  gap: 4px;
+  color: var(--ink);
+  font-size: 14px;
+}
+.filter-menu-sort select {
+  width: 100%;
+}
 .sr-only {
   position: absolute;
   width: 1px;
@@ -346,7 +378,9 @@ main.shell { padding-bottom: 40px; }
 @media (min-width: 960px) {
   .chip-row {
     scroll-snap-type: none;
+    padding-bottom: 0;
   }
+  .filter-menu { display: none !important; }
 }
 .filter-meta { display: flex; gap: 12px; align-items: center; color: var(--ink); font-size: 14px; padding-bottom: 6px; }
 .filter-meta p { margin: 0; color: var(--ink); font-size: 14px; }
@@ -574,6 +608,11 @@ main.shell { padding-bottom: 40px; }
   .filter-bar { padding: 6px 12px 0; }
   .filter-meta { display: none; }
   .chip-row { margin: 0; padding: 0 0 6px; }
+  .filter-actions > .more,
+  .filter-actions > .sort-compact { display: none; }
+  .filter-menu { display: block; }
+  .chip-filter select { max-width: 7rem; }
+  .chip-filter.place select { min-width: 8rem; max-width: 10rem; }
   .sheet.is-peek { height: 72px; }
   .sheet.is-peek .grab { margin: 6px auto 2px; }
   .sheet.is-full { height: min(86dvh, 100%); overflow: hidden; }
