@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Noto_Sans_Kannada } from "next/font/google";
+import { shortBand } from "../lib/band";
+import type { ViewGroup } from "../lib/view";
 import { PatternTile } from "./PatternTile";
 
 const kannada = Noto_Sans_Kannada({ subsets: ["kannada"], weight: ["500"] });
-import type { ViewGroup } from "../lib/view";
 
 export function GroupList({ groups }: { groups: ViewGroup[] }) {
   if (groups.length === 0) {
@@ -16,19 +17,21 @@ export function GroupList({ groups }: { groups: ViewGroup[] }) {
           <PatternTile name={group.name} />
           <div>
             <h3>{group.name}</h3>
+            <p className="where">
+              {group.country}
+              {group.usStates.length > 0 ? ` · ${group.usStates.join(", ")}` : ""}
+            </p>
             {group.nativeName ? (
               <p className={`${kannada.className} native`} lang={group.languageCode === "kan" ? "kn" : undefined}>
                 {group.nativeName}
               </p>
             ) : null}
             <p>
-              {group.country}
-              {group.usStates.length > 0 ? ` · ${group.usStates.join(", ")}` : ""} ·{" "}
               {group.languageName} ({group.languageCode})
             </p>
             <p className="nums">
               {group.population?.toLocaleString("en-US") ?? "Population not listed"} · Unreached:{" "}
-              {group.unreached ? "yes" : "no"} · {group.evangelicalBand}
+              {group.unreached ? "yes" : "no"} · {shortBand(group.evangelicalBand)}
             </p>
           </div>
         </Link>

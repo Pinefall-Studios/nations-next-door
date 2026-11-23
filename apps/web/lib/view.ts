@@ -4,6 +4,12 @@ export type ResourceLink = {
   notice?: string;
 };
 
+export type ScriptureRow = {
+  label: string;
+  href: string | null;
+  linkText: string | null;
+};
+
 export type ViewGroup = {
   pgid: string;
   name: string;
@@ -28,6 +34,7 @@ export type ViewGroup = {
   stories: string | null;
   radio: string | null;
   links: ResourceLink[];
+  scripture: ScriptureRow[];
   dataDate: string | null;
 };
 

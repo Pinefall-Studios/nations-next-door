@@ -8,10 +8,14 @@ import type { MapShape, ViewGroup } from "../lib/view";
 export function MapExplorer({
   states,
   countries,
+  stateView,
+  worldView,
   groups,
 }: {
   states: MapShape[];
   countries: MapShape[];
+  stateView: string;
+  worldView: string;
   groups: ViewGroup[];
 }) {
   const [scope, setScope] = useState<"states" | "world">("states");
@@ -44,7 +48,7 @@ export function MapExplorer({
           </div>
           <span className="quiet">Tap a place</span>
         </div>
-        <svg className="map-svg" viewBox={scope === "states" ? "0 0 960 560" : "0 0 960 520"} role="img" aria-label="Unreached groups in this sample">
+        <svg className={scope === "states" ? "map-svg states" : "map-svg world"} viewBox={scope === "states" ? stateView : worldView} role="img" aria-label="Unreached groups in this sample">
           {shapes.map((shape) => (
             <path
               key={shape.id}

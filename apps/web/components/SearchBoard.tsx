@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { shortBand } from "../lib/band";
 import { GroupList } from "./GroupList";
 import type { ViewGroup } from "../lib/view";
 
@@ -86,7 +87,7 @@ export function SearchBoard({ groups, place = "" }: { groups: ViewGroup[]; place
           <span>Evangelical band</span>
           <select value={band} onChange={(event) => setBand(event.target.value)}>
             <option value="">Any</option>
-            {bands.map((item) => <option key={item}>{item}</option>)}
+            {bands.map((item) => <option key={item} value={item}>{shortBand(item)}</option>)}
           </select>
         </label>
         <label>

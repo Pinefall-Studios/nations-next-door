@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { demoAnswer } from "../lib/demo-answer";
 import type { ViewGroup } from "../lib/view";
 
@@ -15,12 +16,15 @@ export function Librarian({
   attribution,
   demo,
   initialOpen = false,
+  closeHref,
 }: {
   groups: ViewGroup[];
   attribution: string;
   demo: boolean;
   initialOpen?: boolean;
+  closeHref?: string;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
   const [draft, setDraft] = useState("");
   const [thread, setThread] = useState<{ role: "ask" | "answer"; text: string }[]>(
@@ -42,21 +46,23 @@ export function Librarian({
     setDraft("");
   }
 
+  function close() {
+    setOpen(false);
+    if (closeHref) router.replace(closeHref, { scroll: false });
+  }
+
   return (
     <>
-      <button type="button" className="btn ask-fab" onClick={() => setOpen(true)}>
-        Ask the librarian
-      </button>
       {open ? (
         <>
-          <button type="button" className="drawer-scrim" aria-label="Close librarian" onClick={() => setOpen(false)} />
+          <button type="button" className="drawer-scrim" aria-label="Close librarian" onClick={close} />
           <aside className="drawer" role="dialog" aria-label="Ask the librarian">
             <header>
               <div>
                 <h2>Ask the librarian</h2>
                 <p className="demo-note">{demo ? "Demo mode. Answers are written from the sample set, not a live model." : "Live model."}</p>
               </div>
-              <button type="button" className="btn secondary" onClick={() => setOpen(false)}>Close</button>
+              <button type="button" className="btn secondary" onClick={close}>Close</button>
             </header>
             <div className="thread">
               {thread.length === 0 ? (

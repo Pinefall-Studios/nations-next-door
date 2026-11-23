@@ -76,15 +76,15 @@ export default async function GroupPage({
               ))}
             </div>
             <ul className="facts">
-              {[
-                ["Bible", group.bible],
-                ["Jesus Film", group.jesusFilm],
-                ["Audio", group.audio],
-                ["Gospel", group.gospel],
-                ["Stories", group.stories],
-                ["Radio", group.radio],
-              ].filter((row): row is [string, string] => typeof row[1] === "string").map(([label, value]) => (
-                <li key={label}><span>{label}</span><strong>{value}</strong></li>
+              {group.scripture.map((row) => (
+                <li key={row.label}>
+                  <span>{row.label}</span>
+                  <strong>
+                    {row.href && row.linkText ? (
+                      <a href={row.href} target="_blank" rel="noreferrer">{row.linkText}</a>
+                    ) : "Not in this sample"}
+                  </strong>
+                </li>
               ))}
             </ul>
             {group.links.map((link) => (
@@ -107,6 +107,7 @@ export default async function GroupPage({
         attribution={catalog.attribution}
         demo={!process.env.AI_GATEWAY_API_KEY}
         initialOpen={query.ask === "1"}
+        closeHref={`/groups/${group.pgid}`}
       />
     </>
   );

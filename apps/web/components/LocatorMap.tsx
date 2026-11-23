@@ -16,14 +16,15 @@ export function LocatorMap({
   const map = buildLocator({ latitude, longitude, countryCode, usStates });
   return (
     <figure className="locator">
-      <svg viewBox="0 0 640 360" role="img" aria-label="Locator map">
+      <svg viewBox={`0 0 ${map.width} ${map.height}`} role="img" aria-label="Locator map">
         {map.shapes.map((shape, index) => (
           <path
             key={index}
             d={shape.d}
             fill={shape.emphasis ? "#E9B99A" : "#EDE4D3"}
-            stroke="#CFC4B2"
-            strokeWidth={0.8}
+            stroke={shape.emphasis ? "#B7AA96" : "#CFC4B2"}
+            strokeWidth={shape.emphasis ? 1.6 : 1.15}
+            strokeLinejoin="round"
           />
         ))}
         {map.marker ? (

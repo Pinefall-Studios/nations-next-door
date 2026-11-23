@@ -39,7 +39,7 @@ export default function HomePage() {
           </form>
         </section>
         <section className="section">
-          <MapExplorer states={states} countries={countries} groups={catalog.groups} />
+          <MapExplorer states={states.shapes} countries={countries.shapes} stateView={states.viewBox} worldView={countries.viewBox} groups={catalog.groups} />
         </section>
         <section className="section">
           <h2>Largest in this set</h2>
