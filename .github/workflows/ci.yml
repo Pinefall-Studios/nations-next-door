@@ -39,7 +39,7 @@ jobs:
           npx next start -H 127.0.0.1 -p 3456 &
           pid=$!
           trap 'kill $pid' EXIT
-          for i in $(seq 1 40); do
+          for i in $(seq 1 60); do
             if curl -sf -o /dev/null http://127.0.0.1:3456/; then break; fi
             sleep 0.25
           done

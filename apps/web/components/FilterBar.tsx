@@ -122,22 +122,36 @@ export function FilterBar({
         <button type="button" className="quiet-btn" onClick={onNearMe}>Near me</button>
       </div>
       {moreOpen ? (
-        <div className="more-filters">
-          <label>
-            <span>Evangelical band</span>
-            <select value={filters.band} onChange={(event) => onChange({ ...filters, band: event.target.value })}>
-              <option value="">Any</option>
-              {bands.map((item) => <option key={item} value={item}>{shortBand(item)}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>Population from</span>
-            <input type="text" inputMode="numeric" value={filters.popMin} onChange={(event) => onChange({ ...filters, popMin: event.target.value })} />
-          </label>
-          <label>
-            <span>Population to</span>
-            <input type="text" inputMode="numeric" value={filters.popMax} onChange={(event) => onChange({ ...filters, popMax: event.target.value })} />
-          </label>
+        <div
+          className="more-filters"
+          role="dialog"
+          aria-modal="true"
+          aria-label="More filters"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) onMore();
+          }}
+        >
+          <div className="more-filters-panel">
+            <div className="more-filters-head">
+              <h2>More filters</h2>
+              <button type="button" className="btn secondary" onClick={onMore}>Done</button>
+            </div>
+            <label>
+              <span>Evangelical band</span>
+              <select value={filters.band} onChange={(event) => onChange({ ...filters, band: event.target.value })}>
+                <option value="">Any</option>
+                {bands.map((item) => <option key={item} value={item}>{shortBand(item)}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Population from</span>
+              <input type="text" inputMode="numeric" value={filters.popMin} onChange={(event) => onChange({ ...filters, popMin: event.target.value })} />
+            </label>
+            <label>
+              <span>Population to</span>
+              <input type="text" inputMode="numeric" value={filters.popMax} onChange={(event) => onChange({ ...filters, popMax: event.target.value })} />
+            </label>
+          </div>
         </div>
       ) : null}
     </div>

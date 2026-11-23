@@ -24,6 +24,7 @@ function tooltipPosition(info: HoverInfo): { left: number; top: number } {
 
 export function Explore({ initial }: { initial: Catalog }) {
   const [catalog, setCatalog] = useState(initial);
+  const [pending, setPending] = useState(initial.mode !== "live");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [more, setMore] = useState(false);
   const [scope, setScope] = useState<"us" | "world">("us");
@@ -45,7 +46,8 @@ export function Explore({ initial }: { initial: Catalog }) {
       .then((body: Catalog) => {
         if (body.groups?.length) setCatalog(body);
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => setPending(false));
   }, []);
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export function Explore({ initial }: { initial: Catalog }) {
   useEffect(() => {
     if (!selected || ask) return;
     const row = listRef.current?.querySelector(`[data-pgid="${selected}"]`);
-    row?.scrollIntoView({ block: "nearest" });
+    row?.scrollIntoView({ block: "center", inline: "nearest" });
   }, [selected, sheet, ask]);
 
   const focus = useCallback((next: MapCommand) => {
@@ -138,17 +140,22 @@ export function Explore({ initial }: { initial: Catalog }) {
 
   const tip = hoverShown ? tooltipPosition(hoverShown) : null;
 
+  const sheetUp = ask || sheet !== "peek";
+  const showCard = Boolean(selectedGroup && sheet === "full" && !ask);
+
   return (
-    <div className={ask ? "explore is-ask" : "explore"}>
-      <SampleBanner
-        label={catalog.mode === "sample" ? catalog.sampleLabel : null}
-        attribution={catalog.attribution}
-      />
-      {catalog.mode === "live" ? (
+    <div className={`explore${ask ? " is-ask" : ""}${sheetUp ? " is-sheet-up" : ""}`}>
+      {pending ? (
+        <div className="banner is-slim" data-testid="data-loading">
+          <div className="shell">Loading people groups…</div>
+        </div>
+      ) : catalog.mode === "sample" ? (
+        <SampleBanner label={catalog.sampleLabel} attribution={catalog.attribution} />
+      ) : (
         <div className="banner is-slim">
           <div className="shell">{catalog.attribution}</div>
         </div>
-      ) : null}
+      )}
       <FilterBar
         groups={catalog.groups}
         filters={filters}
@@ -208,11 +215,20 @@ export function Explore({ initial }: { initial: Catalog }) {
         <div className={`sheet is-${ask ? "full" : sheet}`}>
           <button type="button" className="grab" aria-label="Resize list" onClick={() => setSheet((current) => current === "peek" ? "half" : current === "half" ? "full" : "peek")} />
           <div className="sheet-head">
-            <p className="nums">{resultLine}</p>
-            {ask ? (
-              <button type="button" className="btn secondary" onClick={() => setAsk(false)}>Close</button>
+            {showCard && selectedGroup ? (
+              <>
+                <button type="button" className="btn secondary" onClick={() => setSheet("half")}>Back</button>
+                <a className="btn secondary" href={`/groups/${selectedGroup.pgid}`}>Open</a>
+              </>
             ) : (
-              <button type="button" className="btn secondary" onClick={() => setAsk(true)}>Ask</button>
+              <>
+                <p className="nums">{resultLine}</p>
+                {ask ? (
+                  <button type="button" className="btn secondary" onClick={() => setAsk(false)}>Close</button>
+                ) : (
+                  <button type="button" className="btn secondary" onClick={() => setAsk(true)}>Ask</button>
+                )}
+              </>
             )}
           </div>
           {ask ? (
@@ -224,7 +240,7 @@ export function Explore({ initial }: { initial: Catalog }) {
               onClose={() => setAsk(false)}
               onOpenGroup={(pgid) => { setAsk(false); select(pgid); setSheet("full"); }}
             />
-          ) : selectedGroup && sheet === "full" ? (
+          ) : showCard && selectedGroup ? (
             <GroupPanel
               group={selectedGroup}
               onAsk={() => setAsk(true)}
@@ -250,7 +266,7 @@ export function Explore({ initial }: { initial: Catalog }) {
                     <span>{group.country}{group.usStates.length ? ` · ${group.usStates.join(", ")}` : ""} · {group.population?.toLocaleString("en-US")}</span>
                   </button>
                   {group.pgid === selected ? (
-                    <button type="button" className="row-open" onClick={() => setSheet("full")}>Open</button>
+                    <button type="button" className="btn secondary row-open" onClick={() => setSheet("full")}>Open</button>
                   ) : null}
                 </li>
               ))}

@@ -19,7 +19,7 @@ export function GroupPanel({
   return (
     <article className="group-panel">
       <PatternTile name={group.name} />
-      <div>
+      <div className="group-panel-body">
         <h2>{group.name}</h2>
         {group.nativeName ? <p className="native">{group.nativeName}</p> : null}
         <p className="where">{where}</p>
@@ -28,17 +28,19 @@ export function GroupPanel({
         </p>
         <p>Unreached: {group.unreached ? "yes" : "no"} · {shortBand(group.evangelicalBand)}</p>
         <MiniBand band={group.evangelicalBand} />
-        <div className="actions">
-          <a className="btn" href={`/groups/${group.pgid}#pray`}>Pray</a>
-          <button type="button" className="btn secondary" onClick={onAsk}>Ask</button>
+        <div className="actions panel-nav">
+          {onClose ? (
+            <button type="button" className="btn secondary" onClick={onClose}>Back</button>
+          ) : null}
           {onOpen ? (
             <button type="button" className="btn secondary" onClick={onOpen}>Open</button>
           ) : (
             <Link className="btn secondary" href={`/groups/${group.pgid}`}>Open page</Link>
           )}
-          {onClose ? (
-            <button type="button" className="quiet-btn" onClick={onClose}>Back</button>
-          ) : null}
+        </div>
+        <div className="actions panel-primary">
+          <a className="btn" href={`/groups/${group.pgid}#pray`}>Pray</a>
+          <button type="button" className="btn secondary" onClick={onAsk}>Ask</button>
         </div>
       </div>
     </article>

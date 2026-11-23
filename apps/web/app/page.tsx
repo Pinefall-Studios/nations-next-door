@@ -1,9 +1,11 @@
 import { Explore } from "../components/Explore";
 import { SiteHeader } from "../components/SiteChrome";
-import { getCatalog } from "../lib/catalog";
+import { loadCountryCatalog } from "../lib/live-catalog";
 
-export default function HomePage() {
-  const catalog = getCatalog();
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const catalog = await loadCountryCatalog("USA", 4_000);
   return (
     <>
       <SiteHeader current="explore" />

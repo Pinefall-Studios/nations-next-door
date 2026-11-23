@@ -166,6 +166,12 @@ export function AtlasMap({
         <button type="button" aria-pressed={scope === "us"} onClick={() => onScope("us")}>United States</button>
         <button type="button" aria-pressed={scope === "world"} onClick={() => onScope("world")}>World</button>
       </div>
+      <div
+        data-testid="map-bloom"
+        data-active={bloom ? "true" : "false"}
+        className={bloom ? "map-bloom is-on" : "map-bloom"}
+        aria-hidden="true"
+      />
       <Map
         ref={mapRef}
         mapStyle={BASEMAP_STYLE}
@@ -186,7 +192,7 @@ export function AtlasMap({
         }}
         onMouseLeave={() => onHover(null)}
       >
-        <NavigationControl position="bottom-right" showCompass={false} />
+        <NavigationControl position="top-right" showCompass={false} />
         <Source id="world" type="geojson" data="/api/geo/world">
           <Layer
             id="world-fill"
