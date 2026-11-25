@@ -4,7 +4,7 @@ Nations Next Door answers one question for a church: who is unreached in my stat
 
 The finished v1 has an MCP server, a one-page site, and printable prayer cards. This document splits that work into eight units. Unit 1 is this repository's current code. Later units are not built yet.
 
-The design direction for the site, the chat, and the prayer cards is [DESIGN.md](DESIGN.md), from Mira (22 November 2026). Mira signs off on the design before any UI pull request merges.
+The design direction for the site, the chat, and the prayer cards is [DESIGN.md](DESIGN.md), from Mira (22 November 2026). Mira signs off on the design before any UI pull request merges. The explore map and librarian in `apps/web` follow the Interactive map and librarian section of that document.
 
 ## How the code is split
 

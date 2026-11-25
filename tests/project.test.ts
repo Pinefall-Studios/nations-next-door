@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toPublicPeopleGroup } from "../src/core/project.js";
+import { evangelicalBandDepth, evangelicalFloorPercent, toPublicPeopleGroup, unreachedFromBand } from "../src/core/project.js";
 import { SENTINELS, loadFixture, poison } from "./helpers.js";
 
 const recorded = loadFixture<{ record: Record<string, unknown> }>("recorded-pg012345.json").record;
@@ -88,6 +88,81 @@ describe("toPublicPeopleGroup", () => {
   it("returns null when there is no people-group id", () => {
     expect(toPublicPeopleGroup({ DisplayName: "Nameless" })).toBeNull();
     expect(toPublicPeopleGroup([])).toBeNull();
+  });
+});
+
+describe("unreachedFromBand", () => {
+  it("treats less than 2% as unreached and does not match less than 20%", () => {
+    expect(unreachedFromBand("Less than 2%")).toBe(true);
+    expect(unreachedFromBand("Less than 2% evangelical")).toBe(true);
+    expect(unreachedFromBand("<2%")).toBe(true);
+    expect(unreachedFromBand("Less than 20%")).toBe(false);
+    expect(unreachedFromBand("Less than 20% evangelical")).toBe(false);
+    expect(unreachedFromBand("2% or Greater but Less than 20%")).toBe(false);
+    expect(unreachedFromBand("15% or Greater but Less than 20%")).toBe(false);
+    expect(unreachedFromBand("2% or Greater but Less than 5%")).toBe(false);
+    expect(unreachedFromBand("5% or Greater but Less than 10%")).toBe(false);
+    expect(unreachedFromBand("5.0% evangelical")).toBe(false);
+  });
+
+  it("applies Unreached only to a list and sorts deepest band, then population", () => {
+    const groups = [
+      { name: "African Americans", evangelicalBand: "15% or Greater but Less than 20%", population: 40_600_000 },
+      { name: "French Canadians", evangelicalBand: "2% or Greater but Less than 20%", population: 2_000_000 },
+      { name: "French", evangelicalBand: "Less than 20% evangelical", population: 1_200_000 },
+      { name: "Dutch", evangelicalBand: "Less than 20%", population: 900_000 },
+      { name: "Czechs", evangelicalBand: "5% or Greater but Less than 10%", population: 700_000 },
+      { name: "Somali", evangelicalBand: "Less than 2%", population: 80_000 },
+      { name: "Yazidi", evangelicalBand: "Less than 2% evangelical", population: 12_000 },
+    ];
+    const listed = groups
+      .filter((group) => unreachedFromBand(group.evangelicalBand) === true)
+      .sort((a, b) => {
+        const deep = evangelicalBandDepth(b.evangelicalBand) - evangelicalBandDepth(a.evangelicalBand);
+        if (deep !== 0) return deep;
+        return b.population - a.population;
+      });
+    expect(listed.map((group) => group.name)).toEqual(["Somali", "Yazidi"]);
+  });
+
+  it("reads a numeric floor from a public evangelical band when one exists", () => {
+    expect(evangelicalFloorPercent("Less than 2%")).toBe(2);
+    expect(evangelicalFloorPercent("15% or Greater but Less than 20%")).toBe(15);
+    expect(evangelicalFloorPercent(null)).toBeNull();
+  });
+});
+
+describe("US state assignment", () => {
+  it("assigns the state of the published point and ignores contradictory location prose", () => {
+    const group = toPublicPeopleGroup({
+      PGID: "PG043186",
+      DisplayName: "Cajuns",
+      ISOAlpha3: "USA",
+      CountryName: "United States",
+      Population: 79000,
+      EvangelicalLevel: "Less than 2%",
+      Lat: 29.69,
+      Long: -91.61,
+      LocationDescription: "Louisiana: coast; Texas: small border area SENTINEL_LOCATION_TEXT",
+    });
+    expect(group?.usStates).toEqual(["LA"]);
+    expect(JSON.stringify(group)).not.toContain("SENTINEL_LOCATION_TEXT");
+  });
+
+  it("uses location names only when the published point is missing", () => {
+    const group = toPublicPeopleGroup({
+      PGID: "PG900004",
+      DisplayName: "Description Only Group",
+      ISOAlpha3: "USA",
+      CountryName: "United States",
+      Population: 1200,
+      EvangelicalLevel: "Less than 2%",
+      Lat: null,
+      Long: null,
+      LocationDescription: "Texas: SENTINEL_LOCATION_TEXT near Lufkin",
+    });
+    expect(group?.usStates).toEqual(["TX"]);
+    expect(JSON.stringify(group)).not.toContain("SENTINEL_LOCATION_TEXT");
   });
 });
 

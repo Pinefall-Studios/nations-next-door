@@ -29,6 +29,20 @@ export interface PeopleGroupsService {
     limit?: number;
     offset?: number;
   }): Promise<PeopleGroupList>;
+  listPeopleGroupsByCountry(input: {
+    country: string;
+    unreachedOnly?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<PeopleGroupList>;
+  listPeopleGroupsByUsState(input: {
+    state: string;
+    unreachedOnly?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<PeopleGroupList>;
+  /** Every public group for one country. Not a world dump. */
+  loadCountry(country: string): Promise<{ groups: PublicPeopleGroup[]; fetchedAt: string }>;
   getPeopleGroup(input: { pgid: string }): Promise<PeopleGroupDetails>;
   listPeopleGroupsByLanguage(input: {
     language: string;
@@ -240,20 +254,47 @@ export function createPeopleGroupsService(options: PeopleGroupsOptions = {}): Pe
   }
 
   return {
+    async listPeopleGroupsByCountry(input) {
+      const country = resolveCountry(input.country);
+      const loaded = await fetchPages({ country });
+      const groups = input.unreachedOnly ? loaded.groups.filter((group) => group.unreached === true) : loaded.groups;
+      return listResult(groups, loaded.fetchedAt, input.limit, input.offset);
+    },
+
+    async listPeopleGroupsByUsState(input) {
+      const state = resolveUsState(input.state);
+      const loaded = await fetchPages({ country: "USA" });
+      const inState = loaded.groups.filter((group) => group.usStates.includes(state.code));
+      const groups = input.unreachedOnly ? inState.filter((group) => group.unreached === true) : inState;
+      return listResult(groups, loaded.fetchedAt, input.limit, input.offset, US_STATE_GEOGRAPHY_NOTE);
+    },
+
+    async loadCountry(countryInput) {
+      const country = resolveCountry(countryInput);
+      return fetchPages({ country });
+    },
+
     async listUnreachedByCountry(input) {
       const country = resolveCountry(input.country);
       const loaded = await fetchPages({ country });
-      const unreached = loaded.groups.filter((group) => group.unreached === true);
-      return listResult(unreached, loaded.fetchedAt, input.limit, input.offset);
+      return listResult(
+        loaded.groups.filter((group) => group.unreached === true),
+        loaded.fetchedAt,
+        input.limit,
+        input.offset,
+      );
     },
 
     async listUnreachedByUsState(input) {
       const state = resolveUsState(input.state);
       const loaded = await fetchPages({ country: "USA" });
-      const unreached = loaded.groups.filter(
-        (group) => group.unreached === true && group.usStates.includes(state.code),
+      return listResult(
+        loaded.groups.filter((group) => group.unreached === true && group.usStates.includes(state.code)),
+        loaded.fetchedAt,
+        input.limit,
+        input.offset,
+        US_STATE_GEOGRAPHY_NOTE,
       );
-      return listResult(unreached, loaded.fetchedAt, input.limit, input.offset, US_STATE_GEOGRAPHY_NOTE);
     },
 
     async getPeopleGroup(input) {

@@ -1,4 +1,7 @@
 node_modules/
+.next/
+*.tsbuildinfo
+apps/web/public/maplibre-gl-worker.mjs
 dist/
 coverage/
 .env
@@ -6,3 +9,6 @@ coverage/
 !.env.example
 *.log
 .DS_Store
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/

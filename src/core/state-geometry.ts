@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import usStates from "../../data/us-states.geojson" with { type: "json" };
 
 interface PreparedState {
   code: string;
@@ -40,8 +39,7 @@ function asPolygons(type: string, coordinates: unknown): number[][][][] {
 
 function loadStates(): PreparedState[] {
   if (prepared) return prepared;
-  const path = fileURLToPath(new URL("../../data/us-states.geojson", import.meta.url));
-  const collection = JSON.parse(readFileSync(path, "utf8")) as {
+  const collection = usStates as {
     features?: Array<{
       properties?: { postal?: string };
       geometry?: { type?: string; coordinates?: unknown };
@@ -103,6 +101,56 @@ function pointInPolygon(lng: number, lat: number, polygon: number[][][]): boolea
     if (hole && pointInRing(lng, lat, hole)) return false;
   }
   return true;
+}
+
+/** Bounding box [west, south, east, north] of a state, or null when unknown. */
+export function bboxForState(code: string): [number, number, number, number] | null {
+  const state = loadStates().find((item) => item.code === code);
+  if (!state) return null;
+  const [minLng, minLat, maxLng, maxLat] = state.bbox;
+  return [minLng, minLat, maxLng, maxLat];
+}
+
+function pointInBox(
+  latitude: number,
+  longitude: number,
+  box: [number, number, number, number],
+  slop = 0.5,
+): boolean {
+  const [west, south, east, north] = box;
+  return longitude >= west - slop && longitude <= east + slop && latitude >= south - slop && latitude <= north + slop;
+}
+
+/**
+ * Tight [west, south, east, north] for a state polygon plus in-state points.
+ * Points outside the state bbox are ignored so a far-off group cannot inflate the fit.
+ * No geographic padding — the camera applies 10–15% padding.
+ */
+export function boundsForStateAndPoints(
+  stateCode: string | undefined,
+  points: Array<{ latitude: number; longitude: number }>,
+): [number, number, number, number] | null {
+  const stateBox = stateCode ? bboxForState(stateCode) : null;
+  const kept = stateBox
+    ? points.filter((point) => pointInBox(point.latitude, point.longitude, stateBox))
+    : points;
+  const boxes: Array<[number, number, number, number]> = [];
+  if (stateBox) boxes.push(stateBox);
+  if (kept.length > 0) {
+    boxes.push([
+      Math.min(...kept.map((point) => point.longitude)),
+      Math.min(...kept.map((point) => point.latitude)),
+      Math.max(...kept.map((point) => point.longitude)),
+      Math.max(...kept.map((point) => point.latitude)),
+    ]);
+  }
+  if (boxes.length === 0) return null;
+  return [
+    Math.min(...boxes.map((box) => box[0])),
+    Math.min(...boxes.map((box) => box[1])),
+    Math.max(...boxes.map((box) => box[2])),
+    Math.max(...boxes.map((box) => box[3])),
+  ];
 }
 
 /** Postal code of the state that contains this point, or null when none does. */

@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import iso3166 from "./data/iso3166.json" with { type: "json" };
 import { UnknownPlaceError, InvalidQueryError } from "./errors.js";
 import { fold, hasUnsafeQueryCharacters } from "./text.js";
 
@@ -9,9 +8,7 @@ interface CountryCode {
   alpha3: string;
 }
 
-const countries = JSON.parse(
-  readFileSync(fileURLToPath(new URL("./data/iso3166.json", import.meta.url)), "utf8"),
-) as CountryCode[];
+const countries = iso3166 as CountryCode[];
 
 /**
  * Common names that are not the ISO short name, or that IMB spells differently

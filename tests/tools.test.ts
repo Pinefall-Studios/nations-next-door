@@ -49,19 +49,19 @@ describe("MCP tool handlers", () => {
     expect(unknown.isError).toBe(true);
     expect(textOf(unknown)).toMatch(/No country match/);
 
+    const unused = async () => {
+      throw new Error("unused");
+    };
     const leaking = {
       async listUnreachedByCountry() {
         throw new Error("database password hunter2");
       },
-      async listUnreachedByUsState() {
-        throw new Error("unused");
-      },
-      async getPeopleGroup() {
-        throw new Error("unused");
-      },
-      async listPeopleGroupsByLanguage() {
-        throw new Error("unused");
-      },
+      listUnreachedByUsState: unused,
+      listPeopleGroupsByCountry: unused,
+      listPeopleGroupsByUsState: unused,
+      loadCountry: unused,
+      getPeopleGroup: unused,
+      listPeopleGroupsByLanguage: unused,
       clearCache() {},
     };
     const hidden = await handleListUnreachedByCountry(leaking, { country: "India" });

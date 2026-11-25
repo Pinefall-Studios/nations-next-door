@@ -54,7 +54,7 @@ export function createServer(service: PeopleGroupsService = createPeopleGroupsSe
     {
       title: "Unreached people groups in a US state",
       description:
-        "List unreached people groups in a US state or the District of Columbia. Pass a name or postal code (Texas or TX). Two-letter codes are USPS codes: GA is Georgia and CA is California. State comes from the published point (US Census state boundaries) and from state names in the published location description. The description text is not returned. A group can match more than one state. Territories such as Puerto Rico are not covered. Public aggregate fields only, with IMB attribution.",
+        "List unreached people groups in a US state or the District of Columbia. Pass a name or postal code (Texas or TX). Two-letter codes are USPS codes: GA is Georgia and CA is California. State comes from the published point (US Census state boundaries). Location text is used only when the point is missing, and never to add a state the point contradicts. The description text is not returned. Territories such as Puerto Rico are not covered. Public aggregate fields only, with IMB attribution.",
       inputSchema: z.object({
         state: z.string().min(1).max(60).describe("US state name or postal code, such as Texas or TX."),
         limit,

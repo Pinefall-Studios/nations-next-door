@@ -79,6 +79,16 @@ npm run smoke:imb
 
 `npm test` does not touch the network. `npm run smoke:imb` calls the live PeopleGroups.org API and prints a few public records for Benin, Texas, PG012345, and language code `ntm`. Run it by hand. CI does not.
 
+## Concept site
+
+`apps/web` is a Next.js review of the map and librarian. The explore view loads live PeopleGroups.org records for the United States through `src/core` (one country at a time, not a world dump). If that API is unreachable, it falls back to the labeled sample set. Restricted-access coordinates stay rounded. Set `AI_GATEWAY_API_KEY` (and optionally `AI_GATEWAY_MODEL`) in the host secret store to turn on the Vercel AI Gateway path in `/api/chat`. Without that key, Ask the librarian stays in a labeled demo mode that can still drive the map for a few canned queries. Do not put keys in the repo.
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
 ## Layout
 
 | Path | Role |

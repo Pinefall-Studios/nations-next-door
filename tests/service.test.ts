@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { imbAttribution } from "../src/core/attribution.js";
 import { PeopleGroupNotFoundError, QueryTooBroadError, UnknownPlaceError } from "../src/core/errors.js";
 import { createPeopleGroupsService } from "../src/core/service.js";
+import { stateForPoint } from "../src/core/state-geometry.js";
 import { SENTINELS, jsonResponse, loadFixture, poison } from "./helpers.js";
 
 const recorded = loadFixture<{ record: Record<string, unknown> }>("recorded-pg012345.json").record;
@@ -105,11 +106,15 @@ describe("PeopleGroups service", () => {
     const texas = await service.listUnreachedByUsState({ state: "Texas", limit: 10 });
     expect(texas.groups.map((group) => group.pgid)).toEqual([
       "PG900001",
-      "PG900002",
       "PG900003",
       "PG900004",
     ]);
-    expect(texas.groups.find((group) => group.pgid === "PG900002")?.usStates).toEqual(["LA", "TX"]);
+    expect(texas.groups.find((group) => group.pgid === "PG900002")).toBeUndefined();
+    for (const group of texas.groups) {
+      if (group.latitude !== null && group.longitude !== null) {
+        expect(stateForPoint(group.latitude, group.longitude)).toBe("TX");
+      }
+    }
     expect(texas.geographyNote).toMatch(/Census Bureau/);
     expect(JSON.stringify(texas)).not.toContain("SENTINEL_LOCATION_TEXT");
 
@@ -136,8 +141,8 @@ describe("PeopleGroups service", () => {
   it("pages with limit and offset after sorting by population", async () => {
     const { service } = serviceWith();
     const page = await service.listUnreachedByUsState({ state: "TX", limit: 1, offset: 1 });
-    expect(page.total).toBe(4);
-    expect(page.groups.map((group) => group.pgid)).toEqual(["PG900002"]);
+    expect(page.total).toBe(3);
+    expect(page.groups.map((group) => group.pgid)).toEqual(["PG900003"]);
   });
 
   it("refetches after the cache lifetime", async () => {

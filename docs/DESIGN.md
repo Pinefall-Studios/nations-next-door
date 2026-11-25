@@ -40,3 +40,21 @@ Kind, careful librarian, not a chatbot: no sparkle icon, persona name, or "AI" b
 3. AI-flavored chrome: sparkles, glowing gradients, chat taking over the site, unsourced answers.
 
 Mira will craft-gate the first UI build before it merges.
+
+## Interactive map and librarian
+
+Direction from Mira for the interactive map and librarian. Where this differs from the Map and Chat sections above, follow this section.
+
+BASEMAP: land #EDE4D3, water #DCE6EA, borders #CFC4B2 0.75px (state borders lighter than country). No terrain, roads, satellite, or POIs. Labels Inter 11px #6B6158: countries at low zoom, states and major cities only when zoomed in. Faint paper grain or none, no drop shadows. US/World toggle as a small segmented control at the map's top-left.
+
+POINTS/CLUSTERS: points filled from the unreached scale #F6E3D6 to #7E3418 by evangelical band (deep = fewer believers), 1.5px #FAF6EF ring, sized by population on a gentle sqrt scale 6-18px. Clusters are soft circles in the deepest ember they contain, count in Inter 600 with AA contrast, one ring, no pulsing. When points are on, the state choropleth drops to a quiet tint, and off at city zoom. Selected point: 2px ink ring plus small lift. Don't dim the rest. No pins, no red.
+
+TOOLTIP (desktop): white paper card, 1px #E7DFD2 hairline, 8px radius, soft shadow, 8px off the point and never covering it. Content: name in Fraunces 16, native name in its script, 'Population · Language', and a 5-step band mini-bar. 120ms delay, 150ms fade. Click opens the card. Touch: no tooltip, tap opens the sheet.
+
+FILTERS: one chip row above the map (Unreached only, default on; Language; Religion; Scripture available; Place). Active chip: ink text on #F6E3D6. Inactive: hairline outline. Ember fill is for the primary action only. Live result line ('47 groups in Texas') plus a quiet Clear. Map and list update together. Mobile: chips scroll horizontally, 'More filters' opens a sheet.
+
+MOBILE SHEET: map fills the screen. Sheet detents: peek ~96px (count plus top group), half (list), full (group card). Grab handle, 16px top radius, paper background, hairline top. Drag and tap both work. Tapping a point raises the sheet to half and scrolls to that group, and the map recenters so the point stays visible above the sheet. Pray (ember) and Ask (secondary) pinned at the bottom of the full sheet. Ask also goes in the sheet header and on the card.
+
+LIBRARIAN: desktop right panel 380-420px, map stays live and fully visible, no scrim. Mobile: chat takes the full sheet, and the map stays visible above at half height whenever an answer moves it. Answer = one short sentence plus tappable group cards, with a small source line on its own line at the bottom. When an answer names places or groups, the map eases 400-600ms ease-out to fit them, with a single soft ring bloom that fades, then a quiet highlight until the next question. No bouncing, flashing, or loops. Card and point hover/tap highlight each other. Every map move gets an undo chip ('Showing Texas · Back to previous view'). Loading is a 'Looking…' line, no typing-dots marathon. No sparkles or AI badges. 'Demo mode' in small text. prefers-reduced-motion: cut, no zoom animation.
+
+A11Y: every map group is also in the list. Points are keyboard-focusable with the selected ring. Tooltip content is also the aria-label. There is no floating Ask button.
